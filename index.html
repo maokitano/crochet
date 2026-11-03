@@ -88,8 +88,8 @@ main{display:flex;flex-direction:column;gap:64px;min-width:0}
 section{display:flex;flex-direction:column;gap:16px;min-width:0}
 
 /* 看板 */
-.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
-@media (max-width:760px){.board{grid-template-columns:minmax(0,1fr)}}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(290px,1fr);gap:12px;align-items:start;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding-bottom:8px;overscroll-behavior-x:contain}
+.board>.col{scroll-snap-align:start}
 .col{border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;border:2px solid transparent;transition:border-color .12s}
 .col[data-status="計画中"]{background:var(--plan)}
 .col[data-status="編み中"]{background:var(--doing)}
@@ -502,7 +502,8 @@ function startDrag(e,card,id){
   const move=ev=>{if(ev.pointerId!==drag.pid)return;ghost.style.left=(ev.clientX-drag.dx)+"px";ghost.style.top=(ev.clientY-drag.dy)+"px";
     ghost.hidden=true;const el=document.elementFromPoint(ev.clientX,ev.clientY);ghost.hidden=false;
     const zone=el&&el.closest("[data-drop]");if(zone!==drag.over){if(drag.over)drag.over.classList.remove("over");drag.over=zone;if(zone)zone.classList.add("over")}
-    if(ev.clientY<60)window.scrollBy(0,-12);else if(ev.clientY>innerHeight-60)window.scrollBy(0,12);};
+    if(ev.clientY<60)window.scrollBy(0,-12);else if(ev.clientY>innerHeight-60)window.scrollBy(0,12);
+    const bd=document.querySelector(".board");if(bd){const br=bd.getBoundingClientRect();if(ev.clientY>br.top&&ev.clientY<br.bottom){if(ev.clientX<br.left+48)bd.scrollLeft-=14;else if(ev.clientX>br.right-48)bd.scrollLeft+=14}}};
   const up=ev=>{if(ev.pointerId!==drag.pid)return;window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",up);
     const d=drag;drag=null;d.ghost.remove();d.card.classList.remove("dragging");if(d.over)d.over.classList.remove("over");
     if(ev.type==="pointerup"&&d.over){const st=d.over.dataset.drop;const p=get("projects",d.id);if(p&&p.status!==st)patch("projects",d.id,{status:st})}};
