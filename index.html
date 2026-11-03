@@ -240,6 +240,12 @@ textarea.memo{width:100%;min-height:150px;border:1px solid var(--line);backgroun
 .pages{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .pg{min-width:40px;height:36px;border-radius:999px;border:1px solid var(--line);background:var(--sheet);cursor:pointer;font-variant-numeric:tabular-nums}
 .pg[aria-current="true"]{background:var(--sky);color:var(--tap-ink);border-color:var(--sky);font-weight:700}
+.imgsel{position:absolute;border:2px solid var(--sky-ink);border-radius:4px;touch-action:none;cursor:move;box-shadow:0 0 0 9999px rgba(0,0,0,0)}
+.imgsel.locked{border-style:dashed;cursor:default}
+.imgh{position:absolute;right:-14px;bottom:-14px;width:28px;height:28px;border-radius:50%;background:var(--sheet);border:2px solid var(--sky-ink);touch-action:none;cursor:nwse-resize}
+.imgbar{position:absolute;left:0;bottom:calc(100% + 8px);display:flex;gap:6px;white-space:nowrap}
+.imgbar.below{bottom:auto;top:calc(100% + 8px)}
+.imgbar .btn{box-shadow:var(--shadow)}
 .canvas-box{position:relative;width:100%;aspect-ratio:1000/1250;max-width:100%;background:var(--sheet);border:0;box-shadow:var(--shadow);border-radius:24px;overflow:hidden}
 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
 .hint{position:absolute;left:0;right:0;top:42%;text-align:center;color:var(--ink-soft);font-size:14px;pointer-events:none}
@@ -774,7 +780,8 @@ let penOnly=false;try{penOnly=localStorage.getItem("crochet-penonly")==="1"}catc
 
 function mountNote(box,pid){
   const W=1000,H=1250;
-  let pages=[{id:"p1",order:1,strokes:[]}],cur="p1",tool="pen",undo=[],live=null,activeId=null,erasedNow=[];
+  let pages=[{id:"p1",order:1,strokes:[],images:[]}],cur="p1",tool="pen",undo=[],live=null,activeId=null,erasedNow=[];
+  let selImg=null,imgDrag=null;const imgCache=new Map();
   const dirty=new Set();let alive=true,unsub=null;
   const col=db?db.collection("projects/"+pid+"/pages"):null;
   const LS="crochet-note-"+pid;
@@ -786,10 +793,16 @@ function mountNote(box,pid){
   const tEr=btn({title:"消しゴム（触れた線を消す）","aria-label":"消しゴム",onclick:()=>{tool="eraser";sync()}},svgIcon('<path d="M7 20h11"/><path d="M4.5 14.5l9-9a2 2 0 012.8 0l3.2 3.2a2 2 0 010 2.8L13 18H8z"/>',22));
   const cBtns=COLORS.map(c=>btn({title:c.name,"aria-label":"色："+c.name,onclick:()=>{penPref.color=c.id;tool="pen";sync()}},h("span",{class:"swatch"})));
   const wBtns=WIDTHS.map(w=>{const px=Math.max(4,Math.round(w*1.2));return btn({"aria-label":"太さ "+w,onclick:()=>{penPref.width=w;tool="pen";sync()}},h("span",{class:"dot",style:`width:${px}px;height:${px}px`}))});
+  const tMove=btn({title:"画像を選ぶ・動かす","aria-label":"画像を選ぶ・動かす",onclick:()=>{tool="move";sync()}},svgIcon('<path d="M5 3l14 8-6 1.5L10 19z"/>',22));
+  const fileIn=h("input",{type:"file",accept:"image/*","aria-label":"画像を選ぶ",style:"position:absolute;inset:0;opacity:0;cursor:pointer"});
+  fileIn.addEventListener("change",()=>{const f=fileIn.files&&fileIn.files[0];fileIn.value="";if(f)addImage(f)});
+  const tImg=h("span",{class:"tool",title:"画像を追加（写真・カメラ・ファイル）",style:"position:relative"},svgIcon('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/>',22),fileIn);
+  const tPaste=btn({title:"コピーした画像を貼り付け","aria-label":"コピーした画像を貼り付け",onclick:pasteFromClipboard},svgIcon('<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11h6M9 15h4"/>',22));
   const undoBtn=btn({title:"ひとつ戻す","aria-label":"ひとつ戻す",onclick:doUndo},svgIcon('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/>',22));
   const po=h("input",{type:"checkbox",id:"penOnly"});po.checked=penOnly;po.onchange=()=>{penOnly=po.checked;try{localStorage.setItem("crochet-penonly",penOnly?"1":"0")}catch(e){}};
   function sync(){
-    tPen.setAttribute("aria-pressed",tool==="pen");tEr.setAttribute("aria-pressed",tool==="eraser");
+    tPen.setAttribute("aria-pressed",tool==="pen");tEr.setAttribute("aria-pressed",tool==="eraser");tMove.setAttribute("aria-pressed",tool==="move");
+    if(tool!=="move"&&selImg){selImg=null;renderSel()}
     COLORS.forEach((c,i)=>{cBtns[i].setAttribute("aria-pressed",tool==="pen"&&penPref.color===c.id);cBtns[i].firstChild.style.background=colorOf(c.id)});
     WIDTHS.forEach((w,i)=>wBtns[i].setAttribute("aria-pressed",tool==="pen"&&penPref.width===w));
   }
@@ -799,18 +812,19 @@ function mountNote(box,pid){
     h("button",{class:"btn small danger",type:"button",onclick:()=>{const p=page();undo.push({type:"clear",strokes:p.strokes});p.strokes=[];redraw();mark(p.id);clrConf.hidden=true;clrAsk.hidden=false}},"消す"),
     h("button",{class:"btn small",type:"button",onclick:()=>{clrConf.hidden=true;clrAsk.hidden=false}},"やめる"));
   const clrAsk=h("button",{class:"btn small",type:"button",onclick:()=>{clrConf.hidden=false;clrAsk.hidden=true}},"このページを消す");
-  const cv=h("canvas"),hint=h("div",{class:"hint"},"Apple Pencilや指で、編み図や目数のメモを書けます");
-  const cbox=h("div",{class:"canvas-box"},cv,hint);
+  const cv=h("canvas"),hint=h("div",{class:"hint"},"Apple Pencilや指で書けます。編み図の画像も貼れます");
+  const selEl=h("div",{class:"imgsel",hidden:true});
+  const cbox=h("div",{class:"canvas-box"},cv,hint,selEl);
   box.replaceChildren(
-    h("div",{class:"toolbar",role:"toolbar","aria-label":"手書きツール"},h("div",{class:"seg"},tPen,tEr),h("span",{class:"sep"}),h("div",{class:"seg"},cBtns),h("span",{class:"sep"}),h("div",{class:"seg"},wBtns),h("span",{class:"sep"}),undoBtn,h("label",{class:"toggle"},po," 指では書かない")),
+    h("div",{class:"toolbar",role:"toolbar","aria-label":"手書きツール"},h("div",{class:"seg"},tPen,tEr,tMove),h("span",{class:"sep"}),h("div",{class:"seg"},cBtns),h("span",{class:"sep"}),h("div",{class:"seg"},wBtns),h("span",{class:"sep"}),h("div",{class:"seg"},tImg,tPaste),h("span",{class:"sep"}),undoBtn,h("label",{class:"toggle"},po," 指では書かない")),
     h("div",{class:"ctl"},pagesEl,h("button",{class:"btn small",type:"button",onclick:addPage},"＋ページ"),clrAsk,clrConf,st),
     cbox,
     h("p",{class:"foot"},"書いた内容は自動で保存され、別の端末で開いても同じ状態になります。"));
   sync();
 
   const page=()=>pages.find(p=>p.id===cur)||pages[0];
-  function renderPages(){pages.sort((a,b)=>a.order-b.order);pagesEl.replaceChildren(...pages.map((p,i)=>h("button",{class:"pg",type:"button","aria-label":(i+1)+"ページ目","aria-current":p.id===cur,onclick:()=>{cur=p.id;undo=[];renderPages();redraw()}},i+1)))}
-  function addPage(){const order=Math.max(0,...pages.map(p=>p.order))+1;const id="pg"+Date.now().toString(36);pages.push({id,order,strokes:[]});cur=id;undo=[];renderPages();redraw();mark(id)}
+  function renderPages(){pages.sort((a,b)=>a.order-b.order);pagesEl.replaceChildren(...pages.map((p,i)=>h("button",{class:"pg",type:"button","aria-label":(i+1)+"ページ目","aria-current":p.id===cur,onclick:()=>{cur=p.id;undo=[];selImg=null;renderSel();renderPages();redraw()}},i+1)))}
+  function addPage(){const order=Math.max(0,...pages.map(p=>p.order))+1;const id="pg"+Date.now().toString(36);pages.push({id,order,strokes:[],images:[]});cur=id;undo=[];renderPages();redraw();mark(id)}
 
   const ctx=cv.getContext("2d");let scale=1;
   function resize(){const r=cv.getBoundingClientRect();if(!r.width)return;const dpr=window.devicePixelRatio||1;cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);scale=cv.width/W;redraw()}
@@ -823,18 +837,79 @@ function mountNote(box,pid){
   function stroke(s){const p=s.p;if(!p||p.length<3)return;ctx.strokeStyle=ctx.fillStyle=colorOf(s.c);ctx.lineCap="round";ctx.lineJoin="round";
     if(p.length===3){ctx.beginPath();ctx.arc(p[0],p[1],s.w*(0.35+0.7*p[2]/100)/2+0.5,0,Math.PI*2);ctx.fill();return}
     for(let i=3;i<p.length;i+=3){ctx.beginPath();ctx.lineWidth=s.w*(0.35+0.7*p[i+2]/100);ctx.moveTo(p[i-3],p[i-2]);ctx.lineTo(p[i],p[i+1]);ctx.stroke()}}
-  function redraw(){ctx.setTransform(scale,0,0,scale,0,0);grid();const pg=page();pg.strokes.forEach(stroke);if(live)stroke(live);hint.hidden=pg.strokes.length>0||!!live}
+  function imgEl(id){
+    if(imgCache.has(id))return imgCache.get(id);
+    const im=new Image();imgCache.set(id,im);
+    if(assets)assets.url(id).then(u=>{im.onload=()=>{if(alive)redraw()};im.src=u}).catch(()=>{im.failed=true;if(alive)redraw()});
+    return im;
+  }
+  function drawImages(pg){for(const g of pg.images||[]){const im=imgEl(g.id);
+    if(im.complete&&im.naturalWidth)ctx.drawImage(im,g.x,g.y,g.w,g.h);
+    else{ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--grid").trim()||"#eee";ctx.fillRect(g.x,g.y,g.w,g.h);
+      ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--ink-soft").trim();ctx.font="22px sans-serif";ctx.textAlign="center";ctx.fillText(im.failed?"画像を読み込めませんでした":"画像を読み込み中…",g.x+g.w/2,g.y+g.h/2);ctx.textAlign="start"}}}
+  function redraw(){ctx.setTransform(scale,0,0,scale,0,0);grid();const pg=page();drawImages(pg);pg.strokes.forEach(stroke);if(live)stroke(live);hint.hidden=pg.strokes.length>0||!!live||(pg.images||[]).length>0;renderSel()}
+
+  /* ---- 画像の追加・選択・移動・ロック ---- */
+  async function addImage(file){
+    if(!assets){st.textContent="画像を貼るには、設定でGitHubにつないでください";return}
+    st.textContent="画像を保存中…";
+    try{const blob=await shrink(file);const bmp=await createImageBitmap(blob).catch(()=>null);
+      const ratio=bmp?bmp.height/bmp.width:0.75;const r=await assets.upload(blob,{type:"image/jpeg"});
+      const pg=page();const w=Math.min(800,ratio>1.25?800/ratio*1.25:800),hh=w*ratio;
+      const g={id:r.id,x:Math.round((W-w)/2),y:Math.round(Math.max(20,(H-hh)/2)),w:Math.round(w),h:Math.round(hh),locked:false};
+      pg.images=(pg.images||[]).concat(g);undo.push({type:"imgadd",img:g});
+      tool="move";sync();selImg=g;redraw();mark(pg.id);
+    }catch(e){st.textContent="画像を保存できませんでした。通信を確認してください"}
+  }
+  async function pasteFromClipboard(){
+    try{if(!navigator.clipboard||!navigator.clipboard.read)throw 0;
+      const items=await navigator.clipboard.read();
+      for(const it of items){const t=it.types.find(x=>x.startsWith("image/"));if(t){addImage(await it.getType(t));return}}
+      st.textContent="コピーした画像が見つかりませんでした";
+    }catch(e){st.textContent="貼り付けできませんでした。画像ボタンから写真を選んでください"}
+  }
+  const onPaste=e=>{if(route!=="project")return;const f=[...(e.clipboardData&&e.clipboardData.files||[])].find(x=>x.type.startsWith("image/"));if(f){e.preventDefault();addImage(f)}};
+  document.addEventListener("paste",onPaste);
+  function renderSel(){
+    const g=selImg&&(page().images||[]).includes(selImg)?selImg:null;
+    if(!g){selEl.hidden=true;selEl.dataset.key="";return}
+    selEl.hidden=false;selEl.classList.toggle("locked",!!g.locked);
+    Object.assign(selEl.style,{left:g.x/W*100+"%",top:g.y/H*100+"%",width:g.w/W*100+"%",height:g.h/H*100+"%"});
+    const key=g.id+":"+!!g.locked+":"+(g.y<90);if(selEl.dataset.key===key)return;selEl.dataset.key=key;
+    const lockBtn=h("button",{class:"btn small",type:"button",onclick:e=>{e.stopPropagation();g.locked=!g.locked;mark(page().id);renderSel()}},g.locked?"🔓 ロックを外す":"🔒 ロックする");
+    const delBtn=g.locked?null:h("button",{class:"btn small danger",type:"button",onclick:e=>{e.stopPropagation();const pg=page();pg.images=pg.images.filter(x=>x!==g);undo=undo.filter(a=>a.img!==g);selImg=null;mark(pg.id);redraw();if(assets)assets.delete(g.id).catch(()=>{})}},"削除");
+    const done=h("button",{class:"btn small",type:"button",onclick:e=>{e.stopPropagation();selImg=null;tool="pen";sync();redraw()}},"書き込む");
+    const bar=h("div",{class:"imgbar"+(g.y<90?" below":"")},lockBtn,delBtn,done);
+    bar.addEventListener("pointerdown",e=>e.stopPropagation());
+    selEl.replaceChildren(bar,g.locked?null:h("span",{class:"imgh","data-h":"1","aria-hidden":"true"}));
+  }
+  const hitImg=q=>{const ims=page().images||[];for(let i=ims.length-1;i>=0;i--){const g=ims[i];if(q[0]>=g.x&&q[0]<=g.x+g.w&&q[1]>=g.y&&q[1]<=g.y+g.h)return g}return null};
+  function startImgDrag(e,g,resize){
+    if(g.locked)return;e.preventDefault();e.stopPropagation();
+    const q=pt(e);imgDrag={pid:e.pointerId,g,resize,sx:q[0],sy:q[1],ox:g.x,oy:g.y,ow:g.w,oh:g.h};
+    try{e.target.setPointerCapture(e.pointerId)}catch(_){}
+  }
+  selEl.addEventListener("pointerdown",e=>{if(!selImg)return;startImgDrag(e,selImg,!!(e.target.dataset&&e.target.dataset.h))});
+  const imgMove=e=>{if(!imgDrag||e.pointerId!==imgDrag.pid)return;e.preventDefault();const d=imgDrag,q=pt(e),g=d.g;
+    if(d.resize){const ratio=d.oh/d.ow;let w=Math.max(80,d.ow+(q[0]-d.sx));w=Math.min(w,W-g.x);g.w=Math.round(w);g.h=Math.round(w*ratio)}
+    else{g.x=Math.round(Math.min(W-40,Math.max(40-g.w,d.ox+q[0]-d.sx)));g.y=Math.round(Math.min(H-40,Math.max(40-g.h,d.oy+q[1]-d.sy)))}
+    redraw()};
+  selEl.addEventListener("pointermove",imgMove);
+  const endImg=e=>{if(!imgDrag||e.pointerId!==imgDrag.pid)return;const moved=imgDrag.g.x!==imgDrag.ox||imgDrag.g.y!==imgDrag.oy||imgDrag.g.w!==imgDrag.ow;imgDrag=null;if(moved)mark(page().id)};
+  selEl.addEventListener("pointerup",endImg);selEl.addEventListener("pointercancel",endImg);
   const pt=e=>{const r=cv.getBoundingClientRect();return[Math.round((e.clientX-r.left)/r.width*W),Math.round((e.clientY-r.top)/r.height*H),Math.round((e.pressure&&e.pointerType==="pen"?e.pressure:0.5)*100)]};
   const allowed=e=>!(e.pointerType==="touch"&&penOnly);
-  cv.addEventListener("pointerdown",e=>{if(activeId!==null||!allowed(e))return;e.preventDefault();activeId=e.pointerId;try{cv.setPointerCapture(e.pointerId)}catch(_){}
+  cv.addEventListener("pointerdown",e=>{
+    if(tool==="move"){e.preventDefault();const g=hitImg(pt(e));selImg=g;renderSel();if(g&&!g.locked)startImgDrag(e,g,false);return}
+    if(activeId!==null||!allowed(e))return;e.preventDefault();activeId=e.pointerId;try{cv.setPointerCapture(e.pointerId)}catch(_){}
     const q=pt(e);if(tool==="pen"){live={c:penPref.color,w:penPref.width,p:q.slice()};redraw()}else eraseAt(q)});
-  cv.addEventListener("pointermove",e=>{if(e.pointerId!==activeId)return;e.preventDefault();
+  cv.addEventListener("pointermove",e=>{if(imgDrag&&e.pointerId===imgDrag.pid){imgMove(e);return}if(e.pointerId!==activeId)return;e.preventDefault();
     const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];
     for(const ev of(evs.length?evs:[e])){const q=pt(ev);
       if(tool==="pen"&&live){const n=live.p.length,dx=q[0]-live.p[n-3],dy=q[1]-live.p[n-2];if(dx*dx+dy*dy<4)continue;live.p.push(...q);
         ctx.setTransform(scale,0,0,scale,0,0);ctx.strokeStyle=colorOf(live.c);ctx.lineCap="round";ctx.beginPath();ctx.lineWidth=live.w*(0.35+0.7*q[2]/100);ctx.moveTo(live.p[n-3],live.p[n-2]);ctx.lineTo(q[0],q[1]);ctx.stroke();hint.hidden=true}
       else if(tool==="eraser")eraseAt(q)}});
-  const end=e=>{if(e.pointerId!==activeId)return;activeId=null;
+  const end=e=>{if(imgDrag&&e.pointerId===imgDrag.pid){endImg(e);return}if(e.pointerId!==activeId)return;activeId=null;
     if(tool==="pen"&&live){const pg=page();pg.strokes.push(live);undo.push({type:"add",stroke:live});live=null;mark(pg.id)}
     else if(tool==="eraser"&&erasedNow.length){undo.push({type:"erase",strokes:erasedNow});erasedNow=[];mark(page().id)}
     redraw()};
@@ -844,7 +919,8 @@ function mountNote(box,pid){
     pg.strokes=pg.strokes.filter(s=>{for(let i=0;i<s.p.length;i+=3){const dx=s.p[i]-q[0],dy=s.p[i+1]-q[1];if(dx*dx+dy*dy<r*r){erasedNow.push(s);hit=true;return false}}return true});
     if(hit)redraw()}
   function doUndo(){const a=undo.pop();if(!a)return;const pg=page();
-    if(a.type==="add")pg.strokes=pg.strokes.filter(s=>s!==a.stroke);else if(a.type==="erase")pg.strokes=pg.strokes.concat(a.strokes);else pg.strokes=a.strokes.concat(pg.strokes);
+    if(a.type==="imgadd"){pg.images=(pg.images||[]).filter(x=>x!==a.img);if(selImg===a.img)selImg=null;if(assets)assets.delete(a.img.id).catch(()=>{})}
+    else if(a.type==="add")pg.strokes=pg.strokes.filter(s=>s!==a.stroke);else if(a.type==="erase")pg.strokes=pg.strokes.concat(a.strokes);else pg.strokes=a.strokes.concat(pg.strokes);
     redraw();mark(pg.id)}
 
   let t=null,saving=false,again=false;
@@ -854,7 +930,7 @@ function mountNote(box,pid){
     if(saving){again=true;return}saving=true;
     const ids=[...dirty];dirty.clear();
     for(const id of ids){const p=pages.find(x=>x.id===id);if(!p)continue;
-      const body={order:p.order,strokes:p.strokes.map(s=>({c:s.c,w:s.w,p:s.p}))};const size=JSON.stringify(body).length;
+      const body={order:p.order,strokes:p.strokes.map(s=>({c:s.c,w:s.w,p:s.p})),images:(p.images||[]).map(g=>({id:g.id,x:g.x,y:g.y,w:g.w,h:g.h,locked:!!g.locked}))};const size=JSON.stringify(body).length;
       if(size>250000){st.textContent="このページは容量がいっぱいです。新しいページに書いてください";continue}
       try{await col.doc(id).set(body);st.textContent=size>200000?"保存しました（このページは容量が残りわずかです）":"保存しました"}
       catch(e){dirty.add(id);st.textContent="書き込みを保存できませんでした。通信を確認してください"}}
@@ -869,15 +945,16 @@ function mountNote(box,pid){
     let loaded=false;const lt=setTimeout(()=>{if(!loaded)st.textContent="保存先につながりません。書いた内容はこの端末に一時保存します"},10000);
     unsub=col.onSnapshot(q=>{if(!alive)return;
       if(!q.metadata.fromCache){loaded=true;clearTimeout(lt);if(!dirty.size)st.textContent="保存済み"}
-      if(q.empty){if(!q.metadata.fromCache&&pages.some(p=>p.strokes.length)){pages.forEach(p=>dirty.add(p.id));flushPages()}return}
+      if(q.empty){if(!q.metadata.fromCache&&pages.some(p=>p.strokes.length||(p.images||[]).length)){pages.forEach(p=>dirty.add(p.id));flushPages()}return}
       const local=new Map(pages.map(p=>[p.id,p]));
-      pages=q.docs.map(d=>{const v=d.data()||{};const r={id:d.id,order:v.order||0,strokes:Array.isArray(v.strokes)?v.strokes.map(s=>({c:s.c,w:s.w,p:s.p})):[]};
-        return(dirty.has(d.id)||(d.id===cur&&live))?local.get(d.id)||r:r});
+      pages=q.docs.map(d=>{const v=d.data()||{};const r={id:d.id,order:v.order||0,strokes:Array.isArray(v.strokes)?v.strokes.map(s=>({c:s.c,w:s.w,p:s.p})):[],images:Array.isArray(v.images)?v.images.map(g=>Object.assign({},g)):[]};
+        return(dirty.has(d.id)||(d.id===cur&&(live||imgDrag)))?local.get(d.id)||r:r});
+      if(selImg){const sp=pages.find(p=>p.id===cur);selImg=sp&&(sp.images||[]).find(g=>g.id===selImg.id)||null}
       local.forEach((p,id)=>{if(!pages.find(x=>x.id===id)&&dirty.has(id))pages.push(p)});
       if(!pages.find(p=>p.id===cur))cur=pages[0].id;
       renderPages();redraw();lsSave()},()=>{st.textContent="ノートの保存先にアクセスできませんでした"});
   }else st.textContent="この端末のブラウザに保存しています";
-  return{destroy(){alive=false;if(unsub)unsub();ro.disconnect();mo.disconnect();mq.removeEventListener("change",onTheme);clearTimeout(t);if(dirty.size)flushPages()}};
+  return{destroy(){alive=false;document.removeEventListener("paste",onPaste);if(unsub)unsub();ro.disconnect();mo.disconnect();mq.removeEventListener("change",onTheme);clearTimeout(t);if(dirty.size)flushPages()}};
 }
 
 /* ---------- 起動 ---------- */
