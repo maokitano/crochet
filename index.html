@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>crochet</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="crochet">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f3f6f9">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0}
+img{max-width:100%}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: 上にナビ、ホームは「看板ボード（帯見出し）→ 編みたいもの／ほしい毛糸 の2列 → 使用中の毛糸」。プロジェクト詳細は左に情報とカウンター、右に方眼ノート */
+/* Color: パウダーブルーを地に、メロンピンク・バターイエロー・ラベンダーを淡く差す。線より影と余白で区切る */
+:root{
+  --paper:#f3f6f9;--sheet:#ffffff;--ink:#3b4b5e;--ink-soft:#7f8fa2;--line:#d9eaf6;--grid:#e6f2fb;
+  --sky:#c1e5ff;--sky-soft:#dcf0ff;--sky-ink:#3f76a6;
+  --pink:#f7b9ac;--pink-soft:#fde6e0;--pink-ink:#b8675a;
+  --butter:#f6dc8c;--butter-soft:#fdf4d3;--butter-ink:#9a7a22;
+  --lav:#cfc2ea;--lav-soft:#efeaf8;--lav-ink:#7a68a8;
+  --star:var(--butter);--star-soft:var(--butter-soft);
+  --tap-a:#bfe3fd;--tap-b:#fbd3ca;--tap-ink:#33506e;--danger:#d2685f;
+  --shadow:0 2px 10px rgba(90,140,190,.12);--shadow-lift:0 12px 28px rgba(90,140,190,.22);
+  --plan:var(--sky-soft);--plan-ink:var(--sky-ink);--doing:var(--pink-soft);--doing-ink:var(--pink-ink);
+  --done:var(--butter-soft);--done-ink:var(--butter-ink);--want:var(--lav-soft);--want-ink:var(--lav-ink);
+  --f-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+  --f-body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#17212d;--sheet:#1f2b39;--ink:#e4edf5;--ink-soft:#9fb1c4;--line:#2c3c4f;--grid:#263445;
+  --sky:#7fb4dc;--sky-soft:#22364a;--sky-ink:#a9d6fa;
+  --pink:#e59a8c;--pink-soft:#3a2a2d;--pink-ink:#f6b8ac;
+  --butter:#e9c96a;--butter-soft:#363022;--butter-ink:#f1d688;
+  --lav:#a898d4;--lav-soft:#2d2a40;--lav-ink:#c9bcee;
+  --tap-a:#2f4c68;--tap-b:#5a3d42;--tap-ink:#eef5fb;--danger:#ec8c83;
+  --shadow:0 2px 10px rgba(0,0,0,.25);--shadow-lift:0 12px 28px rgba(0,0,0,.4);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#17212d;--sheet:#1f2b39;--ink:#e4edf5;--ink-soft:#9fb1c4;--line:#2c3c4f;--grid:#263445;
+  --sky:#7fb4dc;--sky-soft:#22364a;--sky-ink:#a9d6fa;
+  --pink:#e59a8c;--pink-soft:#3a2a2d;--pink-ink:#f6b8ac;
+  --butter:#e9c96a;--butter-soft:#363022;--butter-ink:#f1d688;
+  --lav:#a898d4;--lav-soft:#2d2a40;--lav-ink:#c9bcee;
+  --tap-a:#2f4c68;--tap-b:#5a3d42;--tap-ink:#eef5fb;--danger:#ec8c83;
+  --shadow:0 2px 10px rgba(0,0,0,.25);--shadow-lift:0 12px 28px rgba(0,0,0,.4);color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--star);outline-offset:2px}
+a{color:inherit}
+.app{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+main{display:flex;flex-direction:column;gap:64px;min-width:0}
+
+/* ナビ */
+.nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-weight:900;font-size:30px;color:var(--sky-ink);line-height:1;margin:0;letter-spacing:.01em;text-decoration:none}
+.tabs{display:flex;gap:4px;background:var(--sheet);border-radius:999px;padding:4px;box-shadow:var(--shadow)}
+.tabs a{text-decoration:none;padding:6px 16px;border-radius:999px;font-size:14px;color:var(--ink-soft)}
+.tabs a[aria-current="page"]{background:var(--sky);color:var(--tap-ink);font-weight:700}
+.sync{margin-left:auto;font-size:12px;color:var(--ink-soft)}
+.gear{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--ink-soft);background:var(--sheet);box-shadow:var(--shadow)}
+.gear[aria-current="page"]{background:var(--sky);color:var(--tap-ink)}
+.setup{max-width:720px;display:flex;flex-direction:column;gap:20px}
+.setup ol{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px;line-height:1.7}
+.setup code{background:var(--sky-soft);border-radius:6px;padding:1px 6px;font-size:13px}
+.setup .props input{font-family:ui-monospace,Menlo,monospace}
+.ok{color:var(--done-ink)}.ng{color:var(--danger)}
+
+.band{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--sky-ink);background:var(--sky-soft);border-radius:999px;padding:6px 18px;margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.band.pink{color:var(--pink-ink);background:var(--pink-soft)}
+.band.butter{color:var(--butter-ink);background:var(--butter-soft)}
+.band.lav{color:var(--lav-ink);background:var(--lav-soft)}
+.band .sub{font-family:var(--f-body);font-weight:400;font-size:13px;color:var(--ink-soft)}
+.band a{margin-left:auto;font-family:var(--f-body);font-size:13px;font-weight:500}
+section{display:flex;flex-direction:column;gap:16px;min-width:0}
+
+/* 看板 */
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+@media (max-width:760px){.board{grid-template-columns:minmax(0,1fr)}}
+.col{border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;border:2px solid transparent;transition:border-color .12s}
+.col[data-status="計画中"]{background:var(--plan)}
+.col[data-status="編み中"]{background:var(--doing)}
+.col[data-status="完成"]{background:var(--done)}
+.col.over,.list.over{border-color:var(--sky)}
+.col-drop{flex:1;display:grid;place-items:center;text-align:center;font-size:13px;color:var(--done-ink);border:1.5px dashed var(--butter);border-radius:16px;padding:18px 12px;line-height:1.6}
+.col-drop a{font-weight:700}
+.col-h{display:flex;align-items:center;gap:8px;padding:2px 4px}
+.pill{display:inline-block;font-size:13px;font-weight:700;padding:2px 12px;border-radius:999px;white-space:nowrap}
+.pill[data-s="計画中"]{background:var(--sheet);color:var(--plan-ink)}
+.pill[data-s="編み中"]{background:var(--sheet);color:var(--doing-ink)}
+.pill[data-s="完成"]{background:var(--sheet);color:var(--done-ink)}
+.pill[data-s="編みたい"]{background:var(--want);color:var(--want-ink)}
+.pill[data-s="未使用"]{background:var(--plan);color:var(--plan-ink)}
+.pill[data-s="使用中"]{background:var(--done);color:var(--done-ink)}
+.pill[data-s="使い切り"]{background:var(--want);color:var(--want-ink)}
+.pill[data-s="欲しい"]{background:var(--doing);color:var(--doing-ink)}
+.stsel{width:auto;border:0;padding:3px 10px;cursor:pointer;font-size:13px}
+.stsel.pill[data-s="計画中"]{background:var(--plan)}
+.stsel.pill[data-s="編み中"]{background:var(--doing)}
+.stsel.pill[data-s="完成"]{background:var(--done)}
+.hk{--hc:#8a96a8;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px;color:color-mix(in srgb,var(--hc) 75%,var(--ink));background:color-mix(in srgb,var(--hc) 15%,var(--sheet));white-space:nowrap}
+span.hk::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--hc);flex:none}
+select.hk.hksel{width:auto;border:0;padding:4px 10px;cursor:pointer}
+.hk .hkx{border:0;background:transparent;color:inherit;cursor:pointer;padding:0 0 0 2px;font-size:15px;line-height:1}
+.swbtn{border:0;background:transparent;padding:3px;border-radius:50%;cursor:pointer;display:grid;place-items:center}
+.swbtn[aria-pressed="true"]{box-shadow:0 0 0 2px var(--sky-ink)}
+.swbtn .sw{width:24px;height:24px}
+.ychip .sw{width:14px;height:14px}
+.ychip a{text-decoration:none}
+.ychip a:hover{text-decoration:underline}
+.linkplus{position:relative;flex:none;width:28px;height:28px;border-radius:50%;border:1.5px dashed var(--sky);color:var(--sky-ink);display:grid;place-items:center;font-size:18px;line-height:1;font-weight:700}
+.linkplus:hover{background:var(--sky-soft)}
+.linkplus:focus-within{outline:2px solid var(--sky-ink);outline-offset:2px}
+select.linkadd{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0;font-size:16px}
+td .ychips{flex-wrap:nowrap}
+th{white-space:nowrap}
+td .ychip{white-space:nowrap}
+.cchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--sheet);border-radius:999px;padding:3px 10px 3px 4px;cursor:pointer;font-size:13px;white-space:nowrap}
+.sw{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(60,80,100,.18);flex:none;display:inline-block}
+.sw.none{background:repeating-linear-gradient(45deg,var(--grid) 0 4px,var(--sheet) 4px 8px)}
+.pal{position:fixed;z-index:60;background:var(--sheet);border-radius:20px;box-shadow:var(--shadow-lift);padding:12px;display:grid;grid-template-columns:repeat(4,auto);gap:4px;max-width:calc(100vw - 32px)}
+.pal button{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;cursor:pointer;font-size:11px;line-height:1.3;color:var(--ink-soft);width:72px;padding:6px 2px;border-radius:12px;text-align:center}
+.pal button[aria-pressed="true"]{background:var(--sky-soft);color:var(--ink)}
+.pal .sw{width:30px;height:30px}
+.colorcell{display:flex;gap:8px;align-items:center}
+.colorcell input{width:6.5em}
+.mat{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mat input{width:8em}
+.imgbox{width:100%;aspect-ratio:1;max-width:100%;border-radius:24px;overflow:hidden;background:var(--sheet);box-shadow:var(--shadow);display:grid;place-items:center}
+.imgbox img{width:100%;height:100%;object-fit:cover;display:block}
+.imgbox .ph{width:42%;aspect-ratio:1;border-radius:50%}
+.filebtn{position:relative;overflow:hidden;display:inline-flex;align-items:center}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.count{font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.card{background:var(--sheet);border:0;border-radius:16px;box-shadow:var(--shadow);display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;min-width:0}
+.card.dragging{opacity:.35}
+.handle{width:30px;display:grid;place-items:center;color:var(--ink-soft);cursor:grab;touch-action:none;border-radius:16px 0 0 16px}
+.handle:active{cursor:grabbing}
+.card-body{padding:10px 4px 10px 2px;text-decoration:none;min-width:0;display:flex;flex-direction:column;gap:4px}
+.card-title{font-weight:600;display:flex;gap:6px;align-items:center;min-width:0}
+.card-title span:last-child{overflow-wrap:anywhere}
+.meta{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft)}
+.tag{background:var(--sky-soft);border-radius:999px;padding:0 7px;color:var(--ink)}
+.card select{border:0;background:transparent;font-size:12px;color:var(--ink-soft);padding:0 6px;cursor:pointer;max-width:5.5em}
+.ghost{position:fixed;pointer-events:none;z-index:50;transform:rotate(2deg);box-shadow:var(--shadow-lift);width:260px}
+.add{display:flex;gap:6px}
+.name-link{display:flex;gap:8px;align-items:center;text-decoration:none;font-weight:700;min-width:180px}
+.name-link:hover span:last-child{text-decoration:underline}
+.add input{flex:1;min-width:0;border:1.5px dashed var(--sky);background:transparent;border-radius:999px;padding-inline:14px;padding:8px 10px}
+.add input:focus{border-style:solid;background:var(--sheet)}
+.btn{border:1px solid var(--line);background:var(--sheet);border-radius:999px;padding:8px 14px;cursor:pointer;min-height:42px;touch-action:manipulation;white-space:nowrap}
+.btn:hover{border-color:var(--sky)}
+.btn.small{padding:4px 10px;min-height:34px;font-size:13px}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.primary{background:var(--sky);border-color:var(--sky);color:var(--tap-ink);font-weight:700}
+
+/* リスト2列 */
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:64px 24px;align-items:start}
+@media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+.list{background:var(--sheet);border:2px solid transparent;border-radius:22px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--line);min-width:0}
+.li:last-of-type{border-bottom:0}
+.li .grow{flex:1;min-width:0;overflow-wrap:anywhere}
+.li .grow small{display:block;color:var(--ink-soft);font-size:12px}
+.li.card-like{display:grid;grid-template-columns:auto 1fr auto;border-radius:8px}
+.empty{padding:14px 10px;color:var(--ink-soft);font-size:14px}
+.list .add{padding:6px 2px 2px}
+
+/* 毛糸表 */
+.tbl-wrap{overflow-x:auto;background:var(--sheet);border-radius:20px;box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:820px;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--ink-soft);font-weight:600;letter-spacing:.04em;background:var(--paper);position:sticky;top:0}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td input,td select{border:1px solid transparent;background:transparent;border-radius:6px;padding:4px 6px;width:100%}
+td input:hover,td select:hover,td input:focus{border-color:var(--line);background:var(--sheet)}
+td input[type=number]{text-align:right;width:5em}
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chipbtn{border:1px solid var(--line);background:var(--sheet);border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer}
+.chipbtn[aria-pressed="true"]{background:var(--sky);color:var(--tap-ink);border-color:var(--sky);font-weight:700}
+.addyarn{display:flex;gap:8px;flex-wrap:wrap}
+.addyarn input{border:1px solid var(--line);background:var(--sheet);border-radius:999px;padding-inline:14px;padding:8px 10px;min-width:0;flex:1 1 160px}
+
+/* プロジェクト詳細 */
+.detail{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.detail{grid-template-columns:minmax(0,1fr)}}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.back{font-size:14px;color:var(--ink-soft);text-decoration:none}
+.ptitle{display:flex;gap:8px;align-items:center}
+.ptitle input{border:1px solid transparent;background:transparent;border-radius:8px;font-family:var(--f-display);font-weight:900;font-size:clamp(24px,3vw,32px);line-height:1.2;padding:2px 6px;min-width:0}
+.ptitle input:hover,.ptitle input:focus{border-color:var(--line);background:var(--sheet)}
+.ptitle .emoji{width:2em;text-align:center;flex:none}
+.ptitle .name{flex:1}
+.props{display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:8px 12px;align-items:center;font-size:14px}
+.props dt{color:var(--ink-soft)}
+.props dd{margin:0;min-width:0}
+.props input,.props select{border:1px solid var(--line);background:var(--sheet);border-radius:12px;padding:6px 8px;width:100%;min-width:0}
+.ychips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ychip{display:inline-flex;align-items:center;gap:4px;background:var(--pink-soft);color:var(--ink);border-radius:999px;padding:2px 4px 2px 8px;font-size:13px}
+.ychip button{border:0;background:transparent;cursor:pointer;color:var(--ink-soft);width:24px;height:24px}
+.panel{background:var(--sheet);border:0;border-radius:24px;box-shadow:var(--shadow);padding:16px}
+.label{font-size:12px;letter-spacing:.08em;color:var(--ink-soft);font-weight:600;margin:0 0 8px}
+.row-tap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;min-height:160px;border:0;border-radius:20px;background:linear-gradient(135deg,var(--tap-a),var(--tap-b));color:var(--tap-ink);cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:transform .08s}
+.row-tap:active{transform:scale(.98)}
+.row-tap .num{font-family:var(--f-display);font-weight:900;font-size:80px;line-height:1;font-variant-numeric:tabular-nums}
+.row-tap .unit{font-size:14px;opacity:.85}
+.ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.stitch{display:flex;align-items:center;gap:10px;padding-top:12px;margin-top:12px;border-top:1px dashed var(--line)}
+.stitch .n{font-family:var(--f-display);font-weight:700;font-size:34px;min-width:2.2em;text-align:center;font-variant-numeric:tabular-nums}
+.stitch .grow{flex:1;font-size:13px;color:var(--ink-soft);line-height:1.4}
+.round{width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:var(--sheet);font-size:24px;cursor:pointer;touch-action:manipulation}
+.round.plus{background:var(--butter);border-color:var(--butter);color:var(--tap-ink);font-weight:700}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
+textarea.memo{width:100%;min-height:150px;border:1px solid var(--line);background:var(--paper);border-radius:16px;padding:10px;line-height:1.7;resize:vertical}
+
+.note{min-width:0;display:flex;flex-direction:column;gap:10px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--sheet);border:0;border-radius:26px;box-shadow:var(--shadow);padding:8px 12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.seg{display:flex;gap:4px;align-items:center}
+.sep{width:1px;height:28px;background:var(--line)}
+.tool{width:44px;height:44px;border-radius:50%;border:1px solid transparent;background:transparent;cursor:pointer;display:grid;place-items:center;touch-action:manipulation}
+.tool[aria-pressed="true"]{background:var(--sky-soft);border-color:var(--sky)}
+.swatch{width:26px;height:26px;border-radius:50%;border:2px solid var(--sheet);box-shadow:0 0 0 1px var(--line)}
+.tool[aria-pressed="true"] .swatch{box-shadow:0 0 0 2px var(--ink)}
+.dot{border-radius:50%;background:var(--ink)}
+.pages{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pg{min-width:40px;height:36px;border-radius:999px;border:1px solid var(--line);background:var(--sheet);cursor:pointer;font-variant-numeric:tabular-nums}
+.pg[aria-current="true"]{background:var(--sky);color:var(--tap-ink);border-color:var(--sky);font-weight:700}
+.canvas-box{position:relative;width:100%;aspect-ratio:1000/1250;max-width:100%;background:var(--sheet);border:0;box-shadow:var(--shadow);border-radius:24px;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.hint{position:absolute;left:0;right:0;top:42%;text-align:center;color:var(--ink-soft);font-size:14px;pointer-events:none}
+.toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);cursor:pointer;user-select:none}
+.toggle input{width:18px;height:18px;accent-color:var(--sky-ink)}
+.foot{font-size:12px;color:var(--ink-soft)}
+.loading{padding:40px 0;text-align:center;color:var(--ink-soft)}
+@media (prefers-reduced-motion:reduce){.row-tap,.col{transition:none}}
+</style>
+
+<script src="gh-store.js"></script>
+</head>
+<body>
+<div class="app">
+  <nav class="nav">
+    <a class="brand" href="#home">crochet</a>
+    <div class="tabs">
+      <a href="#home" id="tabHome">ホーム</a>
+      <a href="#projects" id="tabProjects">プロジェクト</a>
+      <a href="#yarn" id="tabYarn">毛糸在庫</a>
+    </div>
+    <span class="sync" id="sync">読み込み中…</span>
+    <a href="#settings" class="gear" id="tabSettings" aria-label="設定" title="設定"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></a>
+  </nav>
+  <main id="main"><p class="loading">プロジェクトと毛糸を読み込んでいます…</p></main>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const main=$("main");
+const P_STATUS=["計画中","編み中","完成"];
+const ALL_P=["編みたい","計画中","編み中","完成"];
+const Y_STATUS=["欲しい","未使用","使用中","使い切り"];
+// かぎ針の号数とmmは日本の一般的な規格（Ronique「かぎ針サイズ換算表」）。色はクロバー「アミュレ」の持ち手に近い色。9/0はセットにないため独自色
+const DEFAULT_HOOKS=[{label:"2/0 2.0mm",color:"#9cc43a"},{label:"3/0 2.3mm",color:"#efc81c"},{label:"4/0 2.5mm",color:"#f2672a"},{label:"5/0 3.0mm",color:"#e5374e"},{label:"6/0 3.5mm",color:"#9a48b3"},{label:"7/0 4.0mm",color:"#2fa9de"},{label:"8/0 5.0mm",color:"#22a065"},{label:"9/0 5.5mm",color:"#3456b0"},{label:"10/0 6.0mm",color:"#6e4630"}];
+let hooks=DEFAULT_HOOKS.slice();
+const COLOR_FAMILIES=[{id:"white",name:"白",c:"#ffffff"},{id:"ecru",name:"生成り・ベージュ",c:"#eadcc3"},{id:"gray",name:"グレー",c:"#a9afb7"},{id:"black",name:"黒",c:"#2f3136"},{id:"brown",name:"茶",c:"#8a5a3c"},{id:"red",name:"赤",c:"#d9473f"},{id:"pink",name:"ピンク",c:"#f3a3b5"},{id:"orange",name:"オレンジ",c:"#f29a4a"},{id:"yellow",name:"黄",c:"#f3d34a"},{id:"green",name:"緑",c:"#6fb36a"},{id:"sky",name:"水色",c:"#8fd0f0"},{id:"blue",name:"青",c:"#3d6fc2"},{id:"purple",name:"紫",c:"#9a6cc4"},{id:"metal",name:"シルバー・ゴールド",c:"linear-gradient(135deg,#e3e6ea,#a9adb3 45%,#d8c27a 55%,#b79a4c)"},{id:"multi",name:"グラデーション・ミックス",c:"conic-gradient(#f3a3b5,#f3d34a,#6fb36a,#8fd0f0,#9a6cc4,#f3a3b5)"}];
+const MATERIALS=["ウール","アクリル","コットン","リネン","ナイロン","ポリエステル","モヘア","アルパカ","シルク","レーヨン"];
+const WEIGHTS=["極細","合細","中細","合太","並太","中太","極太","超極太","その他"];
+
+/* ---------- DOM helper ---------- */
+function h(tag,attrs,...kids){
+  const el=document.createElement(tag);
+  if(attrs)for(const k in attrs){const v=attrs[k];if(v==null||v===false)continue;
+    if(k.startsWith("on"))el.addEventListener(k.slice(2),v);
+    else if(k==="class")el.className=v;
+    else if(k==="style")el.style.cssText=v;
+    else if(k==="value")el.value=v;
+    else el.setAttribute(k,v===true?(k.startsWith("aria-")?"true":""):v)}
+  for(const c of kids.flat()){if(c==null||c===false)continue;el.append(c.nodeType?c:document.createTextNode(String(c)))}
+  return el;
+}
+function svgIcon(d,size=20){const s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.setAttribute("width",size);s.setAttribute("height",size);s.setAttribute("viewBox","0 0 24 24");s.setAttribute("fill","none");s.setAttribute("stroke","currentColor");s.setAttribute("stroke-width","1.8");s.setAttribute("stroke-linecap","round");s.setAttribute("stroke-linejoin","round");s.setAttribute("aria-hidden","true");s.innerHTML=d;return s}
+const GRIP='<circle cx="9" cy="6" r="1.2" fill="currentColor"/><circle cx="15" cy="6" r="1.2" fill="currentColor"/><circle cx="9" cy="12" r="1.2" fill="currentColor"/><circle cx="15" cy="12" r="1.2" fill="currentColor"/><circle cx="9" cy="18" r="1.2" fill="currentColor"/><circle cx="15" cy="18" r="1.2" fill="currentColor"/>';
+
+/* ---------- かぎ針 ---------- */
+const hookNum=l=>parseFloat(String(l).split("/")[0])||0;
+function hookColor(label){const f=hooks.find(x=>x.label===label);return f?f.color:"#8a96a8"}
+function hookChip(label,extra){return h("span",{class:"hk",style:"--hc:"+hookColor(label)},label,extra||null)}
+function hookSelect(value,onchange,aria){
+  const known=hooks.some(x=>x.label===value);
+  const s=h("select",{class:"hk hksel","aria-label":aria},h("option",{value:""},"未設定"),hooks.map(x=>h("option",{value:x.label},x.label)),value&&!known?h("option",{value},value):null);
+  s.value=value||"";s.style.setProperty("--hc",value?hookColor(value):"#8a96a8");
+  s.addEventListener("change",()=>{s.style.setProperty("--hc",s.value?hookColor(s.value):"#8a96a8");onchange(s.value)});
+  return s;
+}
+async function saveHooks(arr){
+  hooks=arr.slice().sort((a,b)=>hookNum(a.label)-hookNum(b.label));scheduleRender();
+  if(!db){setSync("保存先につながっていません");return}
+  try{await db.doc("settings/hooks").set({items:hooks});setSync("かぎ針を保存しました")}catch(e){setSync("かぎ針を保存できませんでした")}
+}
+
+/* ---------- カラーチップ ---------- */
+const famOf=id=>COLOR_FAMILIES.find(f=>f.id===id);
+function swatch(id){const f=famOf(id);const el=h("span",{class:"sw"+(f?"":" none"),"aria-hidden":"true"});if(f)el.style.background=f.c;return el}
+let palEl=null;
+function closePal(){if(palEl){palEl.remove();palEl=null;document.removeEventListener("pointerdown",palOutside,true)}}
+function palOutside(e){if(palEl&&!palEl.contains(e.target))closePal()}
+function colorChip(y,withLabel){
+  const f=famOf(y.colorFamily);
+  const b=h("button",{class:"cchip",type:"button","aria-label":"カラーの種類："+(f?f.name:"未設定")+"（変更）"},swatch(y.colorFamily),withLabel?(f?f.name:"カラーを選ぶ"):null);
+  if(!withLabel)b.style.paddingRight="4px";
+  b.addEventListener("click",()=>{
+    closePal();
+    const pick=id=>{closePal();patch("yarns",y.id,{colorFamily:id})};
+    palEl=h("div",{class:"pal",role:"dialog","aria-label":"カラーの種類を選ぶ"},
+      COLOR_FAMILIES.map(c=>h("button",{type:"button","aria-pressed":c.id===y.colorFamily,onclick:()=>pick(c.id)},swatch(c.id),c.name)),
+      h("button",{type:"button","aria-pressed":!y.colorFamily,onclick:()=>pick("")},swatch(""),"なし"));
+    document.body.appendChild(palEl);
+    const r=b.getBoundingClientRect(),pw=palEl.offsetWidth,ph=palEl.offsetHeight;
+    let left=Math.min(r.left,innerWidth-pw-16),top=r.bottom+8;if(top+ph>innerHeight-16)top=Math.max(16,r.top-ph-8);
+    palEl.style.left=Math.max(16,left)+"px";palEl.style.top=top+"px";
+    setTimeout(()=>document.addEventListener("pointerdown",palOutside,true),0);
+  });
+  return b;
+}
+window.addEventListener("scroll",closePal,{passive:true});
+
+/* ---------- 紐付け（作品側の yarnIds に毛糸のIDを持つ） ---------- */
+const yarnsOf=p=>(p.yarnIds||[]).map(id=>get("yarns",id)).filter(Boolean);
+const projectsOf=y=>list("projects").filter(p=>(p.yarnIds||[]).includes(y.id));
+function link(pid,yid,on){const p=get("projects",pid);if(!p)return;const cur=p.yarnIds||[];
+  if(on&&!cur.includes(yid))patch("projects",pid,{yarnIds:cur.concat(yid)});
+  else if(!on&&cur.includes(yid))patch("projects",pid,{yarnIds:cur.filter(x=>x!==yid)})}
+function linker(kind,owner){
+  const isY=kind==="yarns";
+  const items=isY?yarnsOf(owner):projectsOf(owner);
+  const pool=isY?list("yarns").filter(y=>y.status!=="欲しい"&&!items.some(i=>i.id===y.id)):list("projects").filter(p=>!items.some(i=>i.id===p.id));
+  const label=x=>isY?x.name:((x.emoji||"🧶")+" "+x.name);
+  const sel=h("select",{class:"linkadd","aria-label":isY?owner.name+"に毛糸を紐付ける":owner.name+"を使う作品を紐付ける",onchange:e=>{const v=e.target.value;e.target.blur();if(!v)return;isY?link(owner.id,v,true):link(v,owner.id,true)}},
+    h("option",{value:""},isY?"毛糸を選ぶ":"作品を選ぶ"),pool.map(x=>h("option",{value:x.id},label(x))));
+  const add=h("span",{class:"linkplus",title:isY?"毛糸を紐付ける":"作品を紐付ける","aria-hidden":"false"},h("span",{"aria-hidden":"true"},"+"),sel);
+  return h("div",{class:"ychips"},
+    items.map(x=>h("span",{class:"ychip"},isY?swatch(x.colorFamily):null,h("a",{href:(isY?"#y-":"#p-")+x.id},label(x)),
+      h("button",{type:"button","aria-label":x.name+"との紐付けを外す",onclick:()=>isY?link(owner.id,x.id,false):link(x.id,owner.id,false)},"×"))),
+    pool.length?add:null);
+}
+
+/* ---------- データ ---------- */
+const S={projects:new Map(),yarns:new Map(),pLoaded:false,yLoaded:false};
+const patches=new Map();
+let db=null;
+function get(kind,id){const b=S[kind].get(id);if(!b)return null;return Object.assign({},b,patches.get(kind+"/"+id),{id})}
+function list(kind){return [...S[kind].keys()].map(id=>Object.assign({id},get(kind,id))).sort((a,b)=>(a.order||0)-(b.order||0)||String(a.name).localeCompare(b.name,"ja"))}
+function setSync(t){$("sync").textContent=t}
+
+const queues=new Map();
+function patch(kind,id,data,delay){
+  const key=kind+"/"+id;patches.set(key,Object.assign({},patches.get(key),data));
+  let q=queues.get(key);if(!q){q={};queues.set(key,q)}
+  clearTimeout(q.t);q.t=setTimeout(()=>flush(kind,id),delay||0);
+  scheduleRender();
+}
+async function flush(kind,id){
+  const key=kind+"/"+id,q=queues.get(key);if(!db){setSync("保存先につながっていません");return}
+  if(q.running){q.again=true;return}
+  const data=patches.get(key);if(!data)return;
+  q.running=true;const sent=Object.assign({},data,{updatedAt:new Date().toISOString()});
+  setSync("保存中…");
+  try{await db.collection(kind).doc(id).update(sent);
+    const now=patches.get(key)||{};for(const k in data)if(now[k]===data[k])delete now[k];
+    if(Object.keys(now).length)patches.set(key,now);else patches.delete(key);
+    setSync("保存しました");
+  }catch(e){setSync("保存できませんでした。通信を確認してください")}
+  q.running=false;if(q.again){q.again=false;flush(kind,id)}
+}
+async function create(kind,id,body){
+  S[kind].set(id,body);scheduleRender();
+  if(!db){setSync("保存先につながっていません");return}
+  try{await db.collection(kind).doc(id).set(body);setSync("追加しました")}catch(e){setSync("追加できませんでした。通信を確認してください")}
+}
+async function remove(kind,id){
+  S[kind].delete(id);patches.delete(kind+"/"+id);scheduleRender();
+  if(!db)return;
+  try{await db.collection(kind).doc(id).delete();setSync("削除しました")}catch(e){setSync("削除できませんでした")}
+}
+const newId=p=>p+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+
+/* ---------- ルーティング ---------- */
+let route="home",routeId=null,mounted=null;
+function parseHash(){const h=(location.hash||"").slice(1);if(h.startsWith("p-")){route="project";routeId=h.slice(2)}else if(h.startsWith("y-")){route="yarnDetail";routeId=h.slice(2)}else if(h==="yarn"){route="yarn";routeId=null}else if(h==="projects"){route="projects";routeId=null}else if(h==="settings"){route="settings";routeId=null}else{route="home";routeId=null}}
+let pendingRender=false;
+function scheduleRender(){if(pendingRender)return;pendingRender=true;requestAnimationFrame(()=>{pendingRender=false;render()})}
+function busy(){const a=document.activeElement;return a&&main.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=="checkbox"}
+main.addEventListener("focusout",()=>setTimeout(()=>{if(deferred&&!busy()){deferred=false;render()}},0));
+let deferred=false;
+function render(force){
+  $("tabHome").setAttribute("aria-current",route==="home"?"page":"false");
+  $("tabYarn").setAttribute("aria-current",(route==="yarn"||route==="yarnDetail")?"page":"false");
+  $("tabProjects").setAttribute("aria-current",(route==="projects"||route==="project")?"page":"false");
+  $("tabSettings").setAttribute("aria-current",route==="settings"?"page":"false");
+  if(route==="project"){renderProject(force);return}
+  if(!force&&busy()){deferred=true;return}
+  if(mounted){mounted.destroy();mounted=null}
+  closePal();
+  if(route==="settings")renderSettings();else if(route==="yarn")renderYarn();else if(route==="yarnDetail")renderYarnDetail();else if(route==="projects")renderProjectList();else renderHome();
+}
+window.addEventListener("hashchange",()=>{parseHash();pView=null;if(mounted){mounted.destroy();mounted=null}render(true);window.scrollTo(0,0)});
+
+/* ---------- ホーム ---------- */
+function projCard(p){
+  const card=h("div",{class:"card","data-id":p.id},
+    h("div",{class:"handle",title:"ドラッグでステータスを変更","aria-hidden":"true"},svgIcon(GRIP,18)),
+    h("a",{class:"card-body",href:"#p-"+p.id},
+      h("span",{class:"card-title"},h("span",null,p.emoji||"🧶"),h("span",null,p.name)),
+      h("span",{class:"meta"},p.hook?hookChip(p.hook):null,p.row?h("span",null,p.row+"段目"):null,yarnsOf(p).length?h("span",null,"🧶 "+yarnsOf(p).map(y=>y.name).join("・")):null)),
+    statusSelect(p));
+  card.querySelector(".handle").addEventListener("pointerdown",e=>startDrag(e,card,p.id));
+  return card;
+}
+function statusSelect(p){
+  const s=h("select",{"aria-label":p.name+"のステータス",onchange:e=>patch("projects",p.id,{status:e.target.value})},ALL_P.map(v=>h("option",{value:v},v)));
+  s.value=p.status;return s;
+}
+function addInput(placeholder,onAdd,key){
+  key=key||placeholder;
+  const inp=h("input",{type:"text",placeholder,enterkeyhint:"done","aria-label":placeholder,"data-key":key});
+  const go=()=>{const v=inp.value.trim();if(!v)return;inp.value="";onAdd(v);render(true);
+    const again=main.querySelector('[data-key="'+key+'"]');if(again)again.focus()};
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();go()}});
+  return h("div",{class:"add"},inp,h("button",{class:"btn small",type:"button",onclick:go},"追加"));
+}
+function addProject(name,status){create("projects",newId("p"),{name,status,emoji:"🧶",hook:"",yarnIds:[],due:"",url:"",memo:"",row:0,stitch:0,order:Date.now()})}
+
+function renderHome(){
+  const ps=list("projects"),ys=list("yarns");
+  const ready=S.pLoaded||ps.length;
+  const board=h("div",{class:"board"},P_STATUS.map(st=>{
+    const items=ps.filter(p=>p.status===st);
+    if(st==="完成")return h("div",{class:"col","data-status":st,"data-drop":st},
+      h("div",{class:"col-h"},h("span",{class:"pill","data-s":st},st),h("span",{class:"count"},items.length)),
+      h("div",{class:"col-drop"},h("a",{href:"#projects"},"プロジェクト一覧へ")));
+    return h("div",{class:"col","data-status":st,"data-drop":st},
+      h("div",{class:"col-h"},h("span",{class:"pill","data-s":st},st),h("span",{class:"count"},items.length)),
+      items.map(projCard),
+      addInput("新しい作品名",v=>addProject(v,st),"new-"+st));
+  }));
+  const wants=ps.filter(p=>p.status==="編みたい");
+  const wantList=h("div",{class:"list","data-drop":"編みたい"},
+    wants.length?wants.map(p=>{
+      const row=h("div",{class:"li card-like","data-id":p.id},
+        h("div",{class:"handle",title:"ドラッグで看板へ移動","aria-hidden":"true"},svgIcon(GRIP,18)),
+        h("a",{class:"grow",href:"#p-"+p.id,style:"text-decoration:none"},(p.emoji||"🧶")+" "+p.name),
+        h("button",{class:"btn small",type:"button",onclick:()=>patch("projects",p.id,{status:"計画中"})},"計画中へ"));
+      row.querySelector(".handle").addEventListener("pointerdown",e=>startDrag(e,row,p.id));
+      return row;
+    }):null,
+    addInput("編みたいもの",v=>addProject(v,"編みたい")));
+  const wish=ys.filter(y=>y.status==="欲しい");
+  const wishList=h("div",{class:"list"},
+    wish.length?wish.map(y=>h("div",{class:"li"},
+      h("span",{class:"grow"},y.name,y.brand?h("small",null,y.brand):null),
+      h("button",{class:"btn small",type:"button",onclick:()=>patch("yarns",y.id,{status:"未使用"})},"買った"),
+      h("button",{class:"btn small",type:"button","aria-label":y.name+"をリストから外す",onclick:()=>remove("yarns",y.id)},"外す"))
+    ):null,
+    addInput("ほしい毛糸の名前",v=>create("yarns",newId("y"),{name:v,status:"欲しい",brand:"",balls:null,meters:null,weight:"",order:Date.now()})));
+  const using=ys.filter(y=>y.status==="使用中");
+  const usingList=h("div",{class:"list"},using.length?using.map(y=>h("div",{class:"li"},
+      h("span",{class:"grow"},y.name,h("small",null,[y.brand,projectsOf(y).map(p=>p.name).join("・")].filter(Boolean).join(" ／ "))),
+      y.balls!=null?h("span",{class:"count"},y.balls+"玉"):null)):h("p",{class:"empty"},"使用中の毛糸はありません。"));
+
+  main.replaceChildren(
+    h("section",null,h("h2",{class:"band"},"Project"),
+      ready?board:h("p",{class:"loading"},"読み込み中…")),
+    h("div",{class:"two"},
+      h("section",null,h("h2",{class:"band lav"},"編みたいもの",h("span",{class:"sub"},wants.length+"件")),wantList),
+      h("section",null,h("h2",{class:"band pink"},"ほしい毛糸",h("span",{class:"sub"},wish.length+"件")),wishList)),
+    h("section",null,h("h2",{class:"band butter"},"Yarn List",h("span",{class:"sub"},"使用中 "+using.length+" ／ 全"+ys.filter(y=>y.status!=="欲しい").length+"種"),h("a",{href:"#yarn"},"毛糸在庫をすべて見る →")),usingList));
+}
+
+/* ---------- ドラッグ ---------- */
+let drag=null;
+function startDrag(e,card,id){
+  e.preventDefault();
+  const r=card.getBoundingClientRect();
+  const ghost=card.cloneNode(true);ghost.classList.add("ghost");ghost.style.width=r.width+"px";ghost.style.left=r.left+"px";ghost.style.top=r.top+"px";
+  document.body.appendChild(ghost);card.classList.add("dragging");
+  drag={id,card,ghost,dx:e.clientX-r.left,dy:e.clientY-r.top,over:null,pid:e.pointerId};
+  try{e.target.setPointerCapture(e.pointerId)}catch(_){}
+  const move=ev=>{if(ev.pointerId!==drag.pid)return;ghost.style.left=(ev.clientX-drag.dx)+"px";ghost.style.top=(ev.clientY-drag.dy)+"px";
+    ghost.hidden=true;const el=document.elementFromPoint(ev.clientX,ev.clientY);ghost.hidden=false;
+    const zone=el&&el.closest("[data-drop]");if(zone!==drag.over){if(drag.over)drag.over.classList.remove("over");drag.over=zone;if(zone)zone.classList.add("over")}
+    if(ev.clientY<60)window.scrollBy(0,-12);else if(ev.clientY>innerHeight-60)window.scrollBy(0,12);};
+  const up=ev=>{if(ev.pointerId!==drag.pid)return;window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up);window.removeEventListener("pointercancel",up);
+    const d=drag;drag=null;d.ghost.remove();d.card.classList.remove("dragging");if(d.over)d.over.classList.remove("over");
+    if(ev.type==="pointerup"&&d.over){const st=d.over.dataset.drop;const p=get("projects",d.id);if(p&&p.status!==st)patch("projects",d.id,{status:st})}};
+  window.addEventListener("pointermove",move);window.addEventListener("pointerup",up);window.addEventListener("pointercancel",up);
+}
+
+/* ---------- カラー・ブランドの絞り込み ---------- */
+const FF={yarn:{color:"",brand:""},project:{color:"",brand:""}};
+function subFilters(key,yarnsPool){
+  const f=FF[key];
+  const fams=COLOR_FAMILIES.filter(c=>yarnsPool.some(y=>y.colorFamily===c.id));
+  const brands=[...new Set(yarnsPool.map(y=>(y.brand||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  if(f.color&&!fams.some(c=>c.id===f.color))f.color="";
+  if(f.brand&&!brands.includes(f.brand))f.brand="";
+  const sel=h("select",{class:"btn small","aria-label":"ブランドで絞り込む",style:"padding-inline:12px",onchange:e=>{f.brand=e.target.value;render(true)}},h("option",{value:""},"ブランド：すべて"),brands.map(b=>h("option",{value:b},b)));sel.value=f.brand;
+  return h("div",{class:"filters"},
+    h("span",{class:"count"},"カラー"),
+    fams.length?fams.map(c=>h("button",{class:"swbtn",type:"button",title:c.name,"aria-label":"カラー："+c.name,"aria-pressed":f.color===c.id,onclick:()=>{f.color=f.color===c.id?"":c.id;render(true)}},swatch(c.id))):h("span",{class:"count"},"（未設定）"),
+    h("span",{class:"sep",style:"height:22px;margin-inline:6px"}),sel,
+    (f.color||f.brand)?h("button",{class:"chipbtn",type:"button",onclick:()=>{f.color="";f.brand="";render(true)}},"解除"):null);
+}
+const passYarn=(y,f)=>(!f.color||y.colorFamily===f.color)&&(!f.brand||(y.brand||"").trim()===f.brand);
+
+/* ---------- プロジェクト一覧 ---------- */
+let pFilter="すべて";
+function renderProjectList(){
+  const order={"編み中":0,"計画中":1,"編みたい":2,"完成":3};
+  const ps=list("projects").sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)||(a.order||0)-(b.order||0));
+  const allY=list("yarns");const yOf=yarnsOf;
+  const usedY=allY.filter(y=>ps.some(p=>(p.yarnIds||[]).includes(y.id)));
+  const sub=subFilters("project",usedY);const pf=FF.project;
+  const shown=ps.filter(p=>(pFilter==="すべて"||p.status===pFilter)&&(!(pf.color||pf.brand)||yOf(p).some(y=>passYarn(y,pf))));
+  const filt=h("div",{class:"filters"},["すべて",...ALL_P].map(f=>h("button",{class:"chipbtn",type:"button","aria-pressed":f===pFilter,onclick:()=>{pFilter=f;render(true)}},f+(f==="すべて"?"":" "+ps.filter(p=>p.status===f).length))),
+    h("span",{class:"count"},shown.length+"件"));
+  const rows=shown.map(p=>{
+    const hook=hookSelect(p.hook,v=>patch("projects",p.id,{hook:v}),p.name+"のかぎ針");
+    const yarn=linker("yarns",p);
+    const due=h("input",{type:"date","aria-label":p.name+"の完成予定日",value:p.due||"",onchange:e=>patch("projects",p.id,{due:e.target.value})});
+    return h("tr",null,
+      h("td",null,h("a",{class:"name-link",href:"#p-"+p.id},h("span",null,p.emoji||"🧶"),h("span",null,p.name))),
+      h("td",{style:"min-width:120px"},(()=>{const x=statusSelect(p);x.className="pill stsel";x.dataset.s=p.status;return x})()),
+      h("td",{style:"min-width:130px"},hook),
+      h("td",{style:"min-width:200px"},yarn),
+      h("td",null,due),
+      h("td",{class:"num"},(p.row||0)+"段"),
+      h("td",null,h("a",{class:"btn small",href:"#p-"+p.id,style:"text-decoration:none;display:inline-flex;align-items:center"},"開く")));
+  });
+  const nm=h("input",{type:"text",placeholder:"作品名","aria-label":"新しい作品名"});
+  const st=h("select",{"aria-label":"新しい作品のステータス",class:"btn"},ALL_P.map(v=>h("option",{value:v},v)));st.value=pFilter==="すべて"?"計画中":pFilter;
+  const addP=()=>{const n=nm.value.trim();if(!n)return;addProject(n,st.value);nm.value=""};
+  nm.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();addP()}});
+  main.replaceChildren(
+    h("section",null,
+      h("h2",{class:"band"},"プロジェクト",h("span",{class:"sub"},"今編んでいるもの・編みたいもの・完成した作品")),
+      filt,sub,
+      h("div",{class:"tbl-wrap"},h("table",null,
+        h("thead",null,h("tr",null,["作品名","ステータス","かぎ針","使用毛糸","完成予定日","段数",""].map(t=>h("th",null,t)))),
+        h("tbody",null,rows.length?rows:h("tr",null,h("td",{colspan:"7",class:"empty"},S.pLoaded?"この条件の作品はありません。":"読み込み中…"))))),
+      h("div",{class:"addyarn"},nm,st,h("button",{class:"btn primary",type:"button",onclick:addP},"作品を追加"))),
+    hookManager());
+}
+function hookManager(){
+  const go=h("input",{type:"text",placeholder:"号数（例：7.5/0）","aria-label":"号数"});
+  const mm=h("input",{type:"text",inputmode:"decimal",placeholder:"mm（例：4.5）","aria-label":"太さ(mm)",style:"flex:0 1 130px"});
+  const col=h("input",{type:"color",value:"#8fb8de","aria-label":"針の色",style:"flex:0 0 56px;height:42px;padding:3px;border:1px solid var(--line);border-radius:12px;background:var(--sheet)"});
+  const msg=h("span",{class:"count"});
+  const add=()=>{const g=go.value.trim();if(!g){msg.textContent="号数を入れてください";return}
+    const m=mm.value.trim().replace(/mm$/i,"");const label=m?g+" "+m+"mm":g;
+    if(hooks.some(x=>x.label===label)){msg.textContent="同じ針がすでにあります";return}
+    saveHooks(hooks.concat({label,color:col.value}));go.value=mm.value="";msg.textContent=""};
+  return h("section",null,
+    h("h2",{class:"band lav"},"かぎ針",h("span",{class:"sub"},"一覧と作品ページで選べる針。× で外せます")),
+    h("div",{class:"list",style:"padding:16px;gap:14px"},
+      h("div",{class:"ychips"},hooks.map(x=>hookChip(x.label,h("button",{class:"hkx",type:"button","aria-label":x.label+"を一覧から外す",onclick:()=>saveHooks(hooks.filter(y=>y.label!==x.label))},"×")))),
+      h("div",{class:"addyarn"},go,mm,col,h("button",{class:"btn primary",type:"button",onclick:add},"針を追加"),msg)));
+}
+
+/* ---------- 毛糸在庫 ---------- */
+let yFilter="在庫";
+function renderYarn(){
+  const ys=list("yarns");
+  const byStatus=ys.filter(y=>yFilter==="すべて"?true:yFilter==="在庫"?(y.status==="未使用"||y.status==="使用中"):y.status===yFilter);
+  const sub=subFilters("yarn",byStatus);
+  const shown=byStatus.filter(y=>passYarn(y,FF.yarn));
+  const filt=h("div",{class:"filters"},["在庫","未使用","使用中","使い切り","欲しい","すべて"].map(f=>h("button",{class:"chipbtn",type:"button","aria-pressed":f===yFilter,onclick:()=>{yFilter=f;render(true)}},f)),
+    h("span",{class:"count"},shown.length+"件"));
+  const num=(y,k,label)=>h("input",{type:"number",inputmode:"numeric",min:"0","aria-label":y.name+"の"+label,value:y[k]==null?"":y[k],onchange:e=>{const v=e.target.value===""?null:Number(e.target.value);patch("yarns",y.id,{[k]:v})}});
+  const txt=(y,k,label,dl)=>h("input",{type:"text","aria-label":y.name+"の"+label,value:y[k]||"",list:dl||null,onchange:e=>patch("yarns",y.id,{[k]:e.target.value.trim()})});
+  const rows=shown.map(y=>{
+    const sel=h("select",{"aria-label":y.name+"のステータス",onchange:e=>patch("yarns",y.id,{status:e.target.value})},Y_STATUS.map(v=>h("option",{value:v},v)));sel.value=y.status;sel.className="pill stsel";sel.dataset.s=y.status;
+    const no=h("input",{type:"text","aria-label":y.name+"の色番号",placeholder:"色番号",value:y.colorNo||"",onchange:e=>patch("yarns",y.id,{colorNo:e.target.value.trim()})});
+    const pj=linker("projects",y);
+    return h("tr",null,
+      h("td",null,h("a",{class:"name-link",href:"#y-"+y.id},h("span",null,y.name))),
+      h("td",null,h("div",{class:"colorcell"},colorChip(y,false),no)),
+      h("td",{style:"min-width:110px"},sel),
+      h("td",null,txt(y,"brand","ブランド")),
+      h("td",{style:"min-width:180px"},pj),
+      h("td",{class:"num"},num(y,"balls","在庫玉数")),
+      h("td",null,h("a",{class:"btn small",href:"#y-"+y.id,style:"text-decoration:none;display:inline-flex;align-items:center"},"開く")));
+  });
+  const nm=h("input",{type:"text",placeholder:"毛糸名","aria-label":"新しい毛糸の名前"}),br=h("input",{type:"text",placeholder:"ブランド／お店","aria-label":"ブランド"}),
+        bl=h("input",{type:"number",inputmode:"numeric",min:"0",placeholder:"玉数","aria-label":"玉数",style:"flex:0 1 90px"});
+  const addY=()=>{const n=nm.value.trim();if(!n)return;create("yarns",newId("y"),{name:n,status:"未使用",brand:br.value.trim(),balls:bl.value===""?null:Number(bl.value),meters:null,weight:"",order:Date.now()});nm.value=br.value=bl.value=""};
+  main.replaceChildren(
+    h("section",null,
+      h("h2",{class:"band"},"毛糸在庫",h("span",{class:"sub"},"持っている毛糸のストック管理")),
+      filt,sub,
+      h("div",{class:"tbl-wrap"},h("table",null,
+        h("thead",null,h("tr",null,["毛糸名","カラー","ステータス","ブランド／メーカー","使用プロジェクト","在庫玉数",""].map(t=>h("th",null,t)))),
+        h("tbody",null,rows.length?rows:h("tr",null,h("td",{colspan:"7",class:"empty"},S.yLoaded?"この条件の毛糸はありません。":"読み込み中…"))))),
+      h("div",{class:"addyarn"},nm,br,bl,h("button",{class:"btn primary",type:"button",onclick:addY},"毛糸を追加"))));
+}
+
+/* ---------- 毛糸詳細 ---------- */
+let assets=null,imgMsg="";
+function renderYarnDetail(){
+  const y=get("yarns",routeId);
+  if(!y){main.replaceChildren(h("p",{class:"loading"},S.yLoaded?"この毛糸は見つかりませんでした。":"読み込み中…"),h("p",{style:"text-align:center"},h("a",{href:"#yarn"},"毛糸在庫に戻る")));return}
+  const id=y.id;
+  const txt=(k,attrs)=>h("input",Object.assign({type:"text",value:y[k]||"",onchange:e=>patch("yarns",id,{[k]:e.target.value.trim()})},attrs));
+  const num=(k,label)=>h("input",{type:"number",inputmode:"numeric",min:"0","aria-label":label,value:y[k]==null?"":y[k],onchange:e=>patch("yarns",id,{[k]:e.target.value===""?null:Number(e.target.value)})});
+  const status=h("select",{"aria-label":"ステータス",class:"pill stsel","data-s":y.status,onchange:e=>patch("yarns",id,{status:e.target.value})},Y_STATUS.map(v=>h("option",{value:v},v)));status.value=y.status;
+  const weight=h("select",{"aria-label":"太さ",onchange:e=>patch("yarns",id,{weight:e.target.value})},h("option",{value:""},"未設定"),WEIGHTS.map(w=>h("option",{value:w},w)));weight.value=y.weight||"";
+  const mats=y.material||[];
+  const matAll=[...MATERIALS,...mats.filter(m=>!MATERIALS.includes(m))];
+  const matIn=h("input",{type:"text",placeholder:"ほかの素材","aria-label":"ほかの素材を追加"});
+  matIn.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();const v=matIn.value.trim();if(v&&!mats.includes(v))patch("yarns",id,{material:mats.concat(v)});matIn.value=""}});
+  const matEl=h("div",{class:"mat"},matAll.map(m=>h("button",{class:"chipbtn",type:"button","aria-pressed":mats.includes(m),onclick:()=>patch("yarns",id,{material:mats.includes(m)?mats.filter(x=>x!==m):mats.concat(m)})},m)),matIn);
+  const pjEl=linker("projects",y);
+  const memo=h("textarea",{class:"memo","aria-label":"メモ",placeholder:"手ざわり、ゲージ、洗濯表示など",onchange:e=>patch("yarns",id,{memo:e.target.value})});memo.value=y.memo||"";
+
+  // 画像
+  const img=y.image?h("img",{alt:y.name+"の写真"}):null;
+  if(img&&assets)assets.url(y.image).then(u=>{img.src=u}).catch(()=>{img.replaceWith(h("span",{class:"count"},"写真を読み込めませんでした"))});
+  const ph=h("span",{class:"ph"});const fam=famOf(y.colorFamily);ph.style.background=fam?fam.c:"var(--grid)";
+  const file=h("input",{type:"file",accept:"image/*","aria-label":"写真を選ぶ"});
+  file.addEventListener("change",async()=>{const f=file.files&&file.files[0];if(!f)return;
+    imgMsg="アップロード中…";render(true);
+    try{const blob=await shrink(f);const r=await assets.upload(blob,{type:blob.type||"image/jpeg"});
+      const old=get("yarns",id).image;patch("yarns",id,{image:r.id});imgMsg="";
+      if(old)assets.delete(old).catch(()=>{});
+    }catch(e){imgMsg={too_large:"写真が大きすぎます（20MBまで）",unsupported_type:"この形式の画像は使えません。JPEGかPNGにしてください",quota_or_state:"保存できる容量がいっぱいです"}[e&&e.code]||"写真を保存できませんでした。もう一度試してください"}
+    render(true)});
+  const imgCtl=assets?h("div",{class:"ctl"},h("span",{class:"btn small filebtn"},y.image?"写真を変える":"写真を追加",file),
+      y.image?h("button",{class:"btn small",type:"button",onclick:()=>{const old=y.image;patch("yarns",id,{image:""});assets.delete(old).catch(()=>{})}},"写真を外す"):null,
+      imgMsg?h("span",{class:"count"},imgMsg):null)
+    :h("p",{class:"count"},"設定でGitHubにつなぐと、写真を追加できます");
+
+  const delConf=h("span",{class:"confirm",hidden:true},"この毛糸を削除しますか？",
+    h("button",{class:"btn small danger",type:"button",onclick:()=>{if(y.image&&assets)assets.delete(y.image).catch(()=>{});remove("yarns",id);location.hash="yarn"}},"削除する"),
+    h("button",{class:"btn small",type:"button",onclick:()=>{delConf.hidden=true;delAsk.hidden=false}},"やめる"));
+  const delAsk=h("button",{class:"btn small danger",type:"button",onclick:()=>{delConf.hidden=false;delAsk.hidden=true}},"この毛糸を削除");
+
+  main.replaceChildren(h("div",{class:"detail"},
+    h("aside",{class:"side"},
+      h("a",{class:"back",href:"#yarn"},"← 毛糸在庫に戻る"),
+      h("div",{class:"imgbox"},img||ph),
+      imgCtl),
+    h("div",{class:"side"},
+      h("div",{class:"ptitle"},txt("name",{class:"name","aria-label":"毛糸名"})),
+      h("section",{class:"panel"},h("dl",{class:"props",style:"grid-template-columns:7em minmax(0,1fr)"},
+        h("dt",null,"ステータス"),h("dd",null,status),
+        h("dt",null,"ブランド/メーカー"),h("dd",null,txt("brand",{"aria-label":"ブランド/メーカー"})),
+        h("dt",null,"色"),h("dd",null,txt("colorName",{"aria-label":"色の名前",placeholder:"例：スプリングビオラ(グラデーション)"})),
+        h("dt",null,"色番号"),h("dd",null,txt("colorNo",{"aria-label":"色番号",placeholder:"例：12"})),
+        h("dt",null,"カラー"),h("dd",null,colorChip(y,true)),
+        h("dt",null,"素材"),h("dd",null,matEl),
+        h("dt",null,"太さ"),h("dd",null,weight),
+        h("dt",null,"在庫玉数"),h("dd",null,num("balls","在庫玉数")),
+        h("dt",null,"在庫量(m)"),h("dd",null,num("meters","在庫量(m)")),
+        h("dt",null,"使用プロジェクト"),h("dd",null,pjEl),
+        h("dt",null,"購入店"),h("dd",null,txt("shop",{"aria-label":"購入店"})))),
+      h("section",{class:"panel"},h("p",{class:"label"},"メモ"),memo),
+      h("div",{class:"ctl"},delAsk,delConf))));
+  document.title=(y.name||"毛糸")+" | crochet";
+}
+async function shrink(file){
+  try{const bmp=await createImageBitmap(file);const max=1400,sc=Math.min(1,max/Math.max(bmp.width,bmp.height));
+    const c=document.createElement("canvas");c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    const b=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));return b||file}catch(e){return file}
+}
+
+/* ---------- プロジェクト詳細 ---------- */
+let pView=null;
+function renderProject(force){
+  const p=get("projects",routeId);
+  if(!p){if(mounted){mounted.destroy();mounted=null}pView=null;
+    main.replaceChildren(h("p",{class:"loading"},S.pLoaded?"このプロジェクトは見つかりませんでした。":"読み込み中…"),h("p",{style:"text-align:center"},h("a",{href:"#home"},"ホームに戻る")));return}
+  if(!pView||pView.id!==routeId||force){buildProject(p)}else updateProject(p);
+}
+function buildProject(p){
+  const id=p.id;
+  const field=(k,attrs)=>{const el=h("input",Object.assign({type:"text",value:p[k]||""},attrs));el.addEventListener("change",()=>patch("projects",id,{[k]:el.value.trim()}));el.dataset.k=k;return el};
+  const emoji=field("emoji",{class:"emoji","aria-label":"アイコンの絵文字",maxlength:"4"});
+  const name=field("name",{class:"name","aria-label":"作品名"});
+  const status=h("select",{"aria-label":"ステータス",onchange:e=>patch("projects",id,{status:e.target.value})},ALL_P.map(v=>h("option",{value:v},v)));
+  const hook=hookSelect(p.hook,v=>patch("projects",id,{hook:v}),"かぎ針");
+  const due=h("input",{type:"date","aria-label":"完成予定日",value:p.due||"",onchange:e=>patch("projects",id,{due:e.target.value})});
+  const url=field("url",{type:"url",inputmode:"url",placeholder:"https://…","aria-label":"参考URL"});
+  const urlLink=h("a",{target:"_blank",rel:"noopener",style:"font-size:13px"},"開く");
+  const yChips=h("div",{class:"ychips"});
+  const yAdd=null;
+  const memo=h("textarea",{class:"memo","aria-label":"編み方メモ",placeholder:"作り目、段ごとの編み方、目数などのメモ"});memo.value=p.memo||"";
+  memo.addEventListener("input",()=>patch("projects",id,{memo:memo.value},1200));
+
+  const rowNum=h("span",{class:"num"},"0"),stNum=h("span",{class:"n"},"0");
+  const cnt=(fn)=>{const c=get("projects",id);const v={row:c.row||0,stitch:c.stitch||0};fn(v);patch("projects",id,v,600)};
+  const resetConf=h("span",{class:"confirm",hidden:true},"段数と目数を0に戻しますか？",
+    h("button",{class:"btn small danger",type:"button",onclick:()=>{cnt(v=>{v.row=0;v.stitch=0});resetConf.hidden=true;resetAsk.hidden=false}},"戻す"),
+    h("button",{class:"btn small",type:"button",onclick:()=>{resetConf.hidden=true;resetAsk.hidden=false}},"やめる"));
+  const resetAsk=h("button",{class:"btn small",type:"button",onclick:()=>{resetConf.hidden=false;resetAsk.hidden=true}},"リセット");
+  const delConf=h("span",{class:"confirm",hidden:true},"このプロジェクトと手書きノートを削除しますか？",
+    h("button",{class:"btn small danger",type:"button",onclick:()=>{remove("projects",id);location.hash="home"}},"削除する"),
+    h("button",{class:"btn small",type:"button",onclick:()=>{delConf.hidden=true;delAsk.hidden=false}},"やめる"));
+  const delAsk=h("button",{class:"btn small danger",type:"button",onclick:()=>{delConf.hidden=false;delAsk.hidden=true}},"このプロジェクトを削除");
+
+  const noteBox=h("div",{class:"note"});
+  main.replaceChildren(
+    h("div",{class:"detail"},
+      h("aside",{class:"side"},
+        h("a",{class:"back",href:"#projects"},"← プロジェクト一覧に戻る"),
+        h("div",{class:"ptitle"},emoji,name),
+        h("dl",{class:"props"},
+          h("dt",null,"ステータス"),h("dd",null,status),
+          h("dt",null,"かぎ針"),h("dd",null,hook),
+          h("dt",null,"使用毛糸"),h("dd",null,yChips),
+          h("dt",null,"完成予定日"),h("dd",null,due),
+          h("dt",null,"参考URL"),h("dd",{class:"ychips",style:"flex-wrap:nowrap"},url,urlLink)),
+        h("section",{class:"panel","aria-label":"段数カウンター"},
+          h("p",{class:"label"},"段数カウンター"),
+          h("button",{class:"row-tap",type:"button","aria-label":"段数を1増やす",onclick:()=>cnt(v=>{v.row++;v.stitch=0})},rowNum,h("span",{class:"unit"},"段目を編んでいます ・ タップで＋1")),
+          h("div",{class:"ctl",style:"margin-top:10px"},h("button",{class:"btn small",type:"button",onclick:()=>cnt(v=>{v.row=Math.max(0,v.row-1)})},"−1段"),resetAsk,resetConf),
+          h("div",{class:"stitch"},
+            h("button",{class:"round",type:"button","aria-label":"目数を1減らす",onclick:()=>cnt(v=>{v.stitch=Math.max(0,v.stitch-1)})},"−"),stNum,
+            h("button",{class:"round plus",type:"button","aria-label":"目数を1増やす",onclick:()=>cnt(v=>{v.stitch++})},"＋"),
+            h("span",{class:"grow"},"目・模様の数",h("br"),"段を進めると0に戻ります"))),
+        h("section",{class:"panel"},h("p",{class:"label"},"編み方メモ"),memo),
+        h("div",{class:"ctl"},delAsk,delConf)),
+      noteBox));
+  pView={id,emoji,name,status,hook,due,url,urlLink,yChips,yAdd,memo,rowNum,stNum};
+  updateProject(p);
+  if(mounted)mounted.destroy();
+  mounted=mountNote(noteBox,id);
+}
+function updateProject(p){
+  const v=pView,ae=document.activeElement;
+  const setIf=(el,val)=>{if(el!==ae&&el.value!==val)el.value=val};
+  setIf(v.emoji,p.emoji||"");setIf(v.name,p.name||"");if(v.hook!==ae){const nh=hookSelect(p.hook,val=>patch("projects",p.id,{hook:val}),"かぎ針");v.hook.replaceWith(nh);v.hook=nh}setIf(v.due,p.due||"");setIf(v.url,p.url||"");
+  if(v.status!==ae)v.status.value=p.status;
+  if(v.memo!==ae&&!patches.get("projects/"+p.id)?.memo)setIf(v.memo,p.memo||"");
+  v.urlLink.hidden=!/^https?:\/\//.test(p.url||"");if(!v.urlLink.hidden)v.urlLink.href=p.url;
+  v.rowNum.textContent=p.row||0;v.stNum.textContent=p.stitch||0;
+  v.yChips.replaceChildren(linker("yarns",p));
+  document.title=(p.name||"作品")+" | crochet";
+}
+
+/* ---------- 手書きノート ---------- */
+const COLORS=[{id:"ink",light:"#3b4b5e",dark:"#e4edf5",name:"グレー"},{id:"blue",light:"#4f93cf",dark:"#8cc6f5",name:"水色"},{id:"red",light:"#e0837a",dark:"#f4ab9f",name:"ピンク"},{id:"star",light:"#d9ad3c",dark:"#ecd07a",name:"黄色"}];
+const WIDTHS=[3,6,12];
+const isDark=()=>{const t=document.documentElement.dataset.theme;if(t)return t==="dark";return matchMedia("(prefers-color-scheme: dark)").matches};
+const colorOf=id=>{const c=COLORS.find(c=>c.id===id)||COLORS[0];return isDark()?c.dark:c.light};
+let penPref={color:"ink",width:6};
+let penOnly=false;try{penOnly=localStorage.getItem("crochet-penonly")==="1"}catch(e){}
+
+function mountNote(box,pid){
+  const W=1000,H=1250;
+  let pages=[{id:"p1",order:1,strokes:[]}],cur="p1",tool="pen",undo=[],live=null,activeId=null,erasedNow=[];
+  const dirty=new Set();let alive=true,unsub=null;
+  const col=db?db.collection("projects/"+pid+"/pages"):null;
+  const LS="crochet-note-"+pid;
+  try{const v=JSON.parse(localStorage.getItem(LS)||"null");if(v&&Array.isArray(v)&&v.length)pages=v}catch(e){}
+  const lsSave=()=>{try{localStorage.setItem(LS,JSON.stringify(pages))}catch(e){}};
+
+  const btn=(attrs,...k)=>h("button",Object.assign({class:"tool",type:"button"},attrs),...k);
+  const tPen=btn({title:"ペン","aria-label":"ペン",onclick:()=>{tool="pen";sync()}},svgIcon('<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/>',22));
+  const tEr=btn({title:"消しゴム（触れた線を消す）","aria-label":"消しゴム",onclick:()=>{tool="eraser";sync()}},svgIcon('<path d="M7 20h11"/><path d="M4.5 14.5l9-9a2 2 0 012.8 0l3.2 3.2a2 2 0 010 2.8L13 18H8z"/>',22));
+  const cBtns=COLORS.map(c=>btn({title:c.name,"aria-label":"色："+c.name,onclick:()=>{penPref.color=c.id;tool="pen";sync()}},h("span",{class:"swatch"})));
+  const wBtns=WIDTHS.map(w=>{const px=Math.max(4,Math.round(w*1.2));return btn({"aria-label":"太さ "+w,onclick:()=>{penPref.width=w;tool="pen";sync()}},h("span",{class:"dot",style:`width:${px}px;height:${px}px`}))});
+  const undoBtn=btn({title:"ひとつ戻す","aria-label":"ひとつ戻す",onclick:doUndo},svgIcon('<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/>',22));
+  const po=h("input",{type:"checkbox",id:"penOnly"});po.checked=penOnly;po.onchange=()=>{penOnly=po.checked;try{localStorage.setItem("crochet-penonly",penOnly?"1":"0")}catch(e){}};
+  function sync(){
+    tPen.setAttribute("aria-pressed",tool==="pen");tEr.setAttribute("aria-pressed",tool==="eraser");
+    COLORS.forEach((c,i)=>{cBtns[i].setAttribute("aria-pressed",tool==="pen"&&penPref.color===c.id);cBtns[i].firstChild.style.background=colorOf(c.id)});
+    WIDTHS.forEach((w,i)=>wBtns[i].setAttribute("aria-pressed",tool==="pen"&&penPref.width===w));
+  }
+  const pagesEl=h("div",{class:"pages","aria-label":"ノートのページ"});
+  const st=h("span",{class:"count",style:"margin-left:auto;font-size:12px"});
+  const clrConf=h("span",{class:"confirm",hidden:true},"このページの書き込みをすべて消しますか？",
+    h("button",{class:"btn small danger",type:"button",onclick:()=>{const p=page();undo.push({type:"clear",strokes:p.strokes});p.strokes=[];redraw();mark(p.id);clrConf.hidden=true;clrAsk.hidden=false}},"消す"),
+    h("button",{class:"btn small",type:"button",onclick:()=>{clrConf.hidden=true;clrAsk.hidden=false}},"やめる"));
+  const clrAsk=h("button",{class:"btn small",type:"button",onclick:()=>{clrConf.hidden=false;clrAsk.hidden=true}},"このページを消す");
+  const cv=h("canvas"),hint=h("div",{class:"hint"},"Apple Pencilや指で、編み図や目数のメモを書けます");
+  const cbox=h("div",{class:"canvas-box"},cv,hint);
+  box.replaceChildren(
+    h("div",{class:"toolbar",role:"toolbar","aria-label":"手書きツール"},h("div",{class:"seg"},tPen,tEr),h("span",{class:"sep"}),h("div",{class:"seg"},cBtns),h("span",{class:"sep"}),h("div",{class:"seg"},wBtns),h("span",{class:"sep"}),undoBtn,h("label",{class:"toggle"},po," 指では書かない")),
+    h("div",{class:"ctl"},pagesEl,h("button",{class:"btn small",type:"button",onclick:addPage},"＋ページ"),clrAsk,clrConf,st),
+    cbox,
+    h("p",{class:"foot"},"書いた内容は自動で保存され、別の端末で開いても同じ状態になります。"));
+  sync();
+
+  const page=()=>pages.find(p=>p.id===cur)||pages[0];
+  function renderPages(){pages.sort((a,b)=>a.order-b.order);pagesEl.replaceChildren(...pages.map((p,i)=>h("button",{class:"pg",type:"button","aria-label":(i+1)+"ページ目","aria-current":p.id===cur,onclick:()=>{cur=p.id;undo=[];renderPages();redraw()}},i+1)))}
+  function addPage(){const order=Math.max(0,...pages.map(p=>p.order))+1;const id="pg"+Date.now().toString(36);pages.push({id,order,strokes:[]});cur=id;undo=[];renderPages();redraw();mark(id)}
+
+  const ctx=cv.getContext("2d");let scale=1;
+  function resize(){const r=cv.getBoundingClientRect();if(!r.width)return;const dpr=window.devicePixelRatio||1;cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);scale=cv.width/W;redraw()}
+  function grid(){const css=getComputedStyle(document.documentElement);
+    ctx.fillStyle=css.getPropertyValue("--sheet").trim()||"#fff";ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle=css.getPropertyValue("--grid").trim()||"#e3e8ef";ctx.lineWidth=1/scale;ctx.beginPath();
+    for(let x=25;x<W;x+=25){ctx.moveTo(x,0);ctx.lineTo(x,H)}for(let y=25;y<H;y+=25){ctx.moveTo(0,y);ctx.lineTo(W,y)}ctx.stroke();
+    ctx.strokeStyle=css.getPropertyValue("--line").trim();ctx.lineWidth=1.4/scale;ctx.beginPath();
+    for(let x=125;x<W;x+=125){ctx.moveTo(x,0);ctx.lineTo(x,H)}for(let y=125;y<H;y+=125){ctx.moveTo(0,y);ctx.lineTo(W,y)}ctx.stroke()}
+  function stroke(s){const p=s.p;if(!p||p.length<3)return;ctx.strokeStyle=ctx.fillStyle=colorOf(s.c);ctx.lineCap="round";ctx.lineJoin="round";
+    if(p.length===3){ctx.beginPath();ctx.arc(p[0],p[1],s.w*(0.35+0.7*p[2]/100)/2+0.5,0,Math.PI*2);ctx.fill();return}
+    for(let i=3;i<p.length;i+=3){ctx.beginPath();ctx.lineWidth=s.w*(0.35+0.7*p[i+2]/100);ctx.moveTo(p[i-3],p[i-2]);ctx.lineTo(p[i],p[i+1]);ctx.stroke()}}
+  function redraw(){ctx.setTransform(scale,0,0,scale,0,0);grid();const pg=page();pg.strokes.forEach(stroke);if(live)stroke(live);hint.hidden=pg.strokes.length>0||!!live}
+  const pt=e=>{const r=cv.getBoundingClientRect();return[Math.round((e.clientX-r.left)/r.width*W),Math.round((e.clientY-r.top)/r.height*H),Math.round((e.pressure&&e.pointerType==="pen"?e.pressure:0.5)*100)]};
+  const allowed=e=>!(e.pointerType==="touch"&&penOnly);
+  cv.addEventListener("pointerdown",e=>{if(activeId!==null||!allowed(e))return;e.preventDefault();activeId=e.pointerId;try{cv.setPointerCapture(e.pointerId)}catch(_){}
+    const q=pt(e);if(tool==="pen"){live={c:penPref.color,w:penPref.width,p:q.slice()};redraw()}else eraseAt(q)});
+  cv.addEventListener("pointermove",e=>{if(e.pointerId!==activeId)return;e.preventDefault();
+    const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];
+    for(const ev of(evs.length?evs:[e])){const q=pt(ev);
+      if(tool==="pen"&&live){const n=live.p.length,dx=q[0]-live.p[n-3],dy=q[1]-live.p[n-2];if(dx*dx+dy*dy<4)continue;live.p.push(...q);
+        ctx.setTransform(scale,0,0,scale,0,0);ctx.strokeStyle=colorOf(live.c);ctx.lineCap="round";ctx.beginPath();ctx.lineWidth=live.w*(0.35+0.7*q[2]/100);ctx.moveTo(live.p[n-3],live.p[n-2]);ctx.lineTo(q[0],q[1]);ctx.stroke();hint.hidden=true}
+      else if(tool==="eraser")eraseAt(q)}});
+  const end=e=>{if(e.pointerId!==activeId)return;activeId=null;
+    if(tool==="pen"&&live){const pg=page();pg.strokes.push(live);undo.push({type:"add",stroke:live});live=null;mark(pg.id)}
+    else if(tool==="eraser"&&erasedNow.length){undo.push({type:"erase",strokes:erasedNow});erasedNow=[];mark(page().id)}
+    redraw()};
+  cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);
+  cv.addEventListener("touchstart",e=>{if(e.touches.length===1)e.preventDefault()},{passive:false});
+  function eraseAt(q){const pg=page(),r=16;let hit=false;
+    pg.strokes=pg.strokes.filter(s=>{for(let i=0;i<s.p.length;i+=3){const dx=s.p[i]-q[0],dy=s.p[i+1]-q[1];if(dx*dx+dy*dy<r*r){erasedNow.push(s);hit=true;return false}}return true});
+    if(hit)redraw()}
+  function doUndo(){const a=undo.pop();if(!a)return;const pg=page();
+    if(a.type==="add")pg.strokes=pg.strokes.filter(s=>s!==a.stroke);else if(a.type==="erase")pg.strokes=pg.strokes.concat(a.strokes);else pg.strokes=a.strokes.concat(pg.strokes);
+    redraw();mark(pg.id)}
+
+  let t=null,saving=false,again=false;
+  function mark(id){dirty.add(id);lsSave();st.textContent="未保存の書き込みがあります";clearTimeout(t);t=setTimeout(flushPages,1500)}
+  async function flushPages(){
+    if(!col){st.textContent="この端末のブラウザに保存しました";return}
+    if(saving){again=true;return}saving=true;
+    const ids=[...dirty];dirty.clear();
+    for(const id of ids){const p=pages.find(x=>x.id===id);if(!p)continue;
+      const body={order:p.order,strokes:p.strokes.map(s=>({c:s.c,w:s.w,p:s.p}))};const size=JSON.stringify(body).length;
+      if(size>250000){st.textContent="このページは容量がいっぱいです。新しいページに書いてください";continue}
+      try{await col.doc(id).set(body);st.textContent=size>200000?"保存しました（このページは容量が残りわずかです）":"保存しました"}
+      catch(e){dirty.add(id);st.textContent="書き込みを保存できませんでした。通信を確認してください"}}
+    saving=false;if(again){again=false;flushPages()}}
+
+  renderPages();
+  const ro=new ResizeObserver(resize);ro.observe(cbox);
+  const mq=matchMedia("(prefers-color-scheme: dark)"),onTheme=()=>{sync();redraw()};mq.addEventListener("change",onTheme);
+  const mo=new MutationObserver(onTheme);mo.observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  if(col){
+    st.textContent="ノートを読み込み中…";
+    let loaded=false;const lt=setTimeout(()=>{if(!loaded)st.textContent="保存先につながりません。書いた内容はこの端末に一時保存します"},10000);
+    unsub=col.onSnapshot(q=>{if(!alive)return;
+      if(!q.metadata.fromCache){loaded=true;clearTimeout(lt);if(!dirty.size)st.textContent="保存済み"}
+      if(q.empty){if(!q.metadata.fromCache&&pages.some(p=>p.strokes.length)){pages.forEach(p=>dirty.add(p.id));flushPages()}return}
+      const local=new Map(pages.map(p=>[p.id,p]));
+      pages=q.docs.map(d=>{const v=d.data()||{};const r={id:d.id,order:v.order||0,strokes:Array.isArray(v.strokes)?v.strokes.map(s=>({c:s.c,w:s.w,p:s.p})):[]};
+        return(dirty.has(d.id)||(d.id===cur&&live))?local.get(d.id)||r:r});
+      local.forEach((p,id)=>{if(!pages.find(x=>x.id===id)&&dirty.has(id))pages.push(p)});
+      if(!pages.find(p=>p.id===cur))cur=pages[0].id;
+      renderPages();redraw();lsSave()},()=>{st.textContent="ノートの保存先にアクセスできませんでした"});
+  }else st.textContent="この端末のブラウザに保存しています";
+  return{destroy(){alive=false;if(unsub)unsub();ro.disconnect();mo.disconnect();mq.removeEventListener("change",onTheme);clearTimeout(t);if(dirty.size)flushPages()}};
+}
+
+/* ---------- 起動 ---------- */
+let lock=null;async function wake(){try{if(route==="project"&&"wakeLock"in navigator&&document.visibilityState==="visible"&&!lock){lock=await navigator.wakeLock.request("screen");lock.addEventListener("release",()=>{lock=null})}}catch(e){}}
+document.addEventListener("visibilitychange",wake);window.addEventListener("hashchange",wake);
+
+wake();
+/* ---------- GitHub接続 ---------- */
+const CFG_KEY="crochet-gh-config";
+function loadCfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY)||"null")}catch(e){return null}}
+function saveCfg(c){try{if(c)localStorage.setItem(CFG_KEY,JSON.stringify(c));else localStorage.removeItem(CFG_KEY)}catch(e){}}
+const ERRMSG={bad_token:"トークンが無効か、期限が切れています。設定で入れ直してください",forbidden:"このトークンではデータ用リポジトリに書き込めません。設定を確認してください",not_found:"データ用リポジトリが見つかりません。ユーザー名とリポジトリ名を確認してください",rate_limited:"GitHubへのアクセスが多すぎます。少し待ってから開き直してください",network:"通信できませんでした。つながったら自動で送り直します",read_only:"このトークンは読み取り専用です。Contentsを「Read and write」にしてください"};
+function onStoreStatus(st,e){
+  if(st==="saving")setSync("GitHubに保存中…");
+  else if(st==="saved")setSync(db&&db.pending()?"GitHubに保存中…":"GitHubに保存しました");
+  else if(st==="error")setSync(ERRMSG[e&&e.code]||"保存できませんでした。あとで自動で送り直します");
+}
+function startDB(){
+  const cfg=loadCfg();
+  if(!cfg||!cfg.token){db=null;assets=null;setSync("GitHubにつながっていません");S.pLoaded=S.yLoaded=true;if(route!=="settings")location.hash="settings";else render(true);return}
+  render(true);
+  db=CrochetGH.createDB(cfg,onStoreStatus);assets=db.images;
+  let loaded=false;const lt=setTimeout(()=>{if(!loaded)setSync("GitHubにつながりません。表示が古い可能性があります")},10000);
+  const onErr=e=>setSync(ERRMSG[e&&e.code]||"GitHubから読み込めませんでした");
+  const onCol=(kind,flag)=>q=>{
+    const m=new Map();q.docs.forEach(d=>{if(d.exists)m.set(d.id,d.data()||{})});
+    S[kind]=m;if(!q.metadata.fromCache){S[flag]=true;if(S.pLoaded&&S.yLoaded&&!loaded){loaded=true;clearTimeout(lt);setSync(db.pending()?"GitHubに保存中…":"最新の状態です")}}
+    scheduleRender();
+  };
+  db.doc("settings/hooks").onSnapshot(d=>{const v=d.data();if(v&&Array.isArray(v.items)&&v.items.length){hooks=v.items.slice().sort((a,b)=>hookNum(a.label)-hookNum(b.label));scheduleRender()}},onErr);
+  db.collection("projects").onSnapshot(onCol("projects","pLoaded"),onErr);
+  db.collection("yarns").onSnapshot(onCol("yarns","yLoaded"),onErr);
+}
+// ほかの端末での変更を取り込む：画面に戻ったときと、開いている間は30秒ごと
+document.addEventListener("visibilitychange",()=>{if(!db)return;if(document.visibilityState==="visible")db.refreshAll();else db.flushAll()});
+setInterval(()=>{if(db&&document.visibilityState==="visible")db.refreshAll()},30000);
+window.addEventListener("online",()=>{if(db){db.flushAll();db.refreshAll()}});
+window.addEventListener("pagehide",()=>{if(db)db.flushAll()});
+
+function renderSettings(){
+  const cur=loadCfg()||{};
+  const owner=h("input",{type:"text",id:"cfgOwner",value:cur.owner||"maokitano",autocapitalize:"off",autocomplete:"off",spellcheck:"false","aria-label":"GitHubのユーザー名"});
+  const repo=h("input",{type:"text",id:"cfgRepo",value:cur.repo||"crochet-data",autocapitalize:"off",autocomplete:"off",spellcheck:"false","aria-label":"データ用リポジトリ"});
+  const token=h("input",{type:"password",id:"cfgToken",value:cur.token||"",placeholder:"github_pat_…",autocapitalize:"off",autocomplete:"off",spellcheck:"false","aria-label":"アクセストークン"});
+  const msg=h("p",{class:"count",role:"status"});
+  const connect=async()=>{
+    const cfg={owner:owner.value.trim(),repo:repo.value.trim(),branch:"main",token:token.value.trim()};
+    if(!cfg.owner||!cfg.repo||!cfg.token){msg.className="count ng";msg.textContent="3つとも入れてください";return}
+    msg.className="count";msg.textContent="確認しています…";
+    try{await CrochetGH.createDB(cfg).check();saveCfg(cfg);msg.className="count ok";msg.textContent="つながりました。ホームに移動します";
+      S.pLoaded=S.yLoaded=false;startDB();setTimeout(()=>{location.hash="home"},600)}
+    catch(e){msg.className="count ng";msg.textContent=ERRMSG[e&&e.code]||"確認できませんでした。通信を確認してください"}
+  };
+  const discConf=h("span",{class:"confirm",hidden:true},"この端末からトークンを消しますか？（データは消えません）",
+    h("button",{class:"btn small danger",type:"button",onclick:()=>{saveCfg(null);db=null;assets=null;S.projects=new Map();S.yarns=new Map();setSync("GitHubにつながっていません");render(true)}},"消す"),
+    h("button",{class:"btn small",type:"button",onclick:()=>{discConf.hidden=true;discAsk.hidden=false}},"やめる"));
+  const discAsk=h("button",{class:"btn small",type:"button",onclick:()=>{discConf.hidden=false;discAsk.hidden=true}},"この端末の接続を解除");
+  main.replaceChildren(h("div",{class:"setup"},
+    h("section",null,h("h2",{class:"band"},"GitHubとつなぐ",h("span",{class:"sub"},cur.token?"この端末はつながっています":"端末ごとに1回だけ設定します")),
+      h("div",{class:"panel"},h("dl",{class:"props",style:"grid-template-columns:8.5em minmax(0,1fr)"},
+        h("dt",null,"ユーザー名"),h("dd",null,owner),
+        h("dt",null,"データ用リポジトリ"),h("dd",null,repo),
+        h("dt",null,"アクセストークン"),h("dd",null,token)),
+        h("div",{class:"ctl",style:"margin-top:14px"},h("button",{class:"btn primary",type:"button",onclick:connect},"保存してつなぐ"),cur.token?discAsk:null,discConf),msg)),
+    h("section",null,h("h2",{class:"band lav"},"アクセストークンの作り方"),
+      h("div",{class:"panel"},h("ol",null,
+        h("li",null,"GitHubで ",h("code",null,"Settings → Developer settings → Personal access tokens → Fine-grained tokens")," を開き、「Generate new token」を押す"),
+        h("li",null,"Token name に「crochet ",h("code",null,"端末名"),"」などと入れ、Expiration（有効期限）を選ぶ"),
+        h("li",null,"Repository access で「Only select repositories」を選び、",h("code",null,"crochet-data")," だけを選ぶ"),
+        h("li",null,"Permissions の Repository permissions で「Contents」を「Read and write」にする"),
+        h("li",null,"「Generate token」を押して表示された文字列（",h("code",null,"github_pat_"),"で始まる）をコピーし、上の欄に貼り付ける")),
+        h("p",{class:"count",style:"margin-top:10px"},"トークンはこの端末のブラウザの中だけに保存されます。ホーム画面に追加したアイコンから開く場合は、そちらでも1回入れてください。")))));
+}
+
+parseHash();startDB();
+})();
+</script>
+</body>
+</html>
