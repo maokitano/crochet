@@ -88,8 +88,10 @@ main{display:flex;flex-direction:column;gap:64px;min-width:0}
 section{display:flex;flex-direction:column;gap:16px;min-width:0}
 
 /* 看板 */
-.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(290px,1fr);gap:12px;align-items:start;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding-bottom:8px;overscroll-behavior-x:contain}
-.board>.col{scroll-snap-align:start}
+/* 横幅が足りないとき（スマホ・iPad縦）は列幅を固定して横スクロール。広い画面（iPad横・PC）は3列を画面幅に収める */
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:290px;gap:12px;align-items:start;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;padding-bottom:8px;overscroll-behavior-x:contain}
+.board>.col{scroll-snap-align:start;min-width:0}
+@media (min-width:900px){.board{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible;padding-bottom:0}}
 .col{border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;border:2px solid transparent;transition:border-color .12s}
 .col[data-status="計画中"]{background:var(--plan)}
 .col[data-status="編み中"]{background:var(--doing)}
